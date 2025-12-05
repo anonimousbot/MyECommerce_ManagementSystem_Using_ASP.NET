@@ -1,0 +1,453 @@
+﻿@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewBag.Title = "Create Item";
+}
+@model EMS.Models.DTOs.Items.CreateItemRequestModel
+
+<style>
+    .create-item-container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+    }
+
+    .page-header {
+        margin-bottom: 2rem;
+        animation: fadeInDown 0.6s ease;
+    }
+
+        .page-header h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #212529;
+            margin-bottom: 0.5rem;
+        }
+
+        .page-header p {
+            color: #6c757d;
+            font-size: 1rem;
+        }
+
+    .breadcrumb-custom {
+        background: transparent;
+        padding: 0;
+        margin-bottom: 1rem;
+        font-size: 0.9rem;
+    }
+
+        .breadcrumb-custom a {
+            color: #0d6efd;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+            .breadcrumb-custom a:hover {
+                color: #0a58ca;
+            }
+
+    .form-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+        animation: fadeInUp 0.6s ease;
+    }
+
+    .form-card-header {
+        background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+        color: white;
+        padding: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .form-card-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 3s ease-in-out infinite;
+        }
+
+    @@keyframes pulse {
+        0%, 100%
+
+    {
+        transform: scale(1);
+        opacity: 0.5;
+    }
+
+    50% {
+        transform: scale(1.1);
+        opacity: 0.3;
+    }
+
+    }
+
+    .form-card-header h4 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin: 0;
+        position: relative;
+        z-index: 1;
+    }
+
+    .form-card-header p {
+        margin: 0.5rem 0 0 0;
+        opacity: 0.9;
+        font-size: 0.95rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    .form-card-body {
+        padding: 2.5rem;
+    }
+
+    .form-section {
+        margin-bottom: 2rem;
+    }
+
+    .section-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #212529;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e9ecef;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+        .section-title i {
+            color: #0d6efd;
+        }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+        position: relative;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.95rem;
+    }
+
+        .form-label i {
+            color: #0d6efd;
+            font-size: 1rem;
+        }
+
+        .form-label .required {
+            color: #dc3545;
+            margin-left: 0.25rem;
+        }
+
+    .form-control {
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        background: #f8f9fa;
+    }
+
+        .form-control:focus {
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+            background: white;
+            transform: translateY(-2px);
+        }
+
+        .form-control:hover {
+            border-color: #dee2e6;
+            background: white;
+        }
+
+    .input-icon {
+        position: relative;
+    }
+
+        .input-icon i {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+            z-index: 1;
+        }
+
+        .input-icon .form-control {
+            padding-left: 2.75rem;
+        }
+
+    .form-text {
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-top: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+        .form-text i {
+            font-size: 0.75rem;
+        }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        padding-top: 2rem;
+        border-top: 2px solid #e9ecef;
+        margin-top: 2rem;
+    }
+
+    .btn {
+        padding: 0.75rem 2rem;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 1rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+    }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(13, 110, 253, 0.4);
+        }
+
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+        box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+    }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(108, 117, 125, 0.4);
+        }
+
+    .btn-success {
+        background: linear-gradient(135deg, #198754 0%, #146c43 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(25, 135, 84, 0.3);
+        flex: 1;
+    }
+
+        .btn-success:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(25, 135, 84, 0.4);
+        }
+
+    @@keyframes fadeInDown {
+        from
+
+    {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    }
+
+    @@keyframes fadeInUp {
+        from
+
+    {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    }
+
+    /* Responsive */
+    @@media (max-width: 768px) {
+        .create-item-container
+
+    {
+        padding: 1rem;
+    }
+
+    .form-card-body {
+        padding: 1.5rem;
+    }
+
+    .page-header h2 {
+        font-size: 1.5rem;
+    }
+
+    .action-buttons {
+        flex-direction: column-reverse;
+    }
+
+    .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    }</style>
+
+<div class="create-item-container">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb breadcrumb-custom">
+            <li class="breadcrumb-item"><a href="@Url.Action("Index", "Item")"><i class="fas fa-home"></i> Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="@Url.Action("Index", "Item")">Items</a></li>
+            <li class="breadcrumb-item active">Create New</li>
+        </ol>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <h2><i class="fas fa-plus-circle"></i> Add New Item</h2>
+        <p>Fill in the details below to add a new item to your inventory</p>
+    </div>
+
+    <!-- Form Card -->
+    <div class="form-card">
+        <div class="form-card-header">
+            <h4><i class="fas fa-box-open"></i> Item Information</h4>
+            <p>Enter the basic details and pricing for your new item</p>
+        </div>
+
+        <div class="form-card-body">
+            <form asp-controller="Item" asp-action="Create">
+
+                <!-- Basic Information Section -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <i class="fas fa-info-circle"></i>
+                        Basic Information
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Name" class="form-label">
+                            <i class="fas fa-tag"></i>
+                            Item Name
+                            <span class="required">*</span>
+                        </label>
+                        <div class="input-icon">
+                            <i class="fas fa-box"></i>
+                            <input asp-for="Name" type="text" class="form-control" placeholder="e.g., Wireless Mouse, Laptop Stand">
+                        </div>
+                        <small class="form-text">
+                            <i class="fas fa-info-circle"></i>
+                            Enter a clear and descriptive name for the item
+                        </small>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Brand" class="form-label">
+                            <i class="fas fa-copyright"></i>
+                            Brand
+                            <span class="required">*</span>
+                        </label>
+                        <div class="input-icon">
+                            <i class="fas fa-building"></i>
+                            <input asp-for="Brand" class="form-control" placeholder="e.g., Apple, Samsung, Dell">
+                        </div>
+                        <small class="form-text">
+                            <i class="fas fa-info-circle"></i>
+                            Specify the manufacturer or brand name
+                        </small>
+                    </div>
+                </div>
+
+                <!-- Pricing & Stock Section -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <i class="fas fa-naira-sign"></i>
+                        Pricing & Stock
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label asp-for="Price" class="form-label">
+                                <i class="fas fa-money-bill-wave"></i>
+                                Price (₦)
+                                <span class="required">*</span>
+                            </label>
+                            <div class="input-icon">
+                                <i class="fas fa-naira-sign"></i>
+                                <input asp-for="Price" type="number" step="0.01" class="form-control" placeholder="0.00">
+                            </div>
+                            <small class="form-text">
+                                <i class="fas fa-info-circle"></i>
+                                Set the selling price per unit in Naira
+                            </small>
+                        </div>
+
+                        <div class="form-group">
+                            <label asp-for="QuantityInStock" class="form-label">
+                                <i class="fas fa-warehouse"></i>
+                                Quantity in Stock
+                                <span class="required">*</span>
+                            </label>
+                            <div class="input-icon">
+                                <i class="fas fa-cubes"></i>
+                                <input asp-for="QuantityInStock" type="number" class="form-control" placeholder="0">
+                            </div>
+                            <small class="form-text">
+                                <i class="fas fa-info-circle"></i>
+                                Available quantity in inventory
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <a href="@Url.Action("Index", "Item")" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i>
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save"></i>
+                        Save Item
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />

@@ -1,0 +1,67 @@
+﻿@using EMS.Models.DTOs
+
+@model BaseResponse<IEnumerable<EMS.Models.DTOs.Items.ItemDto>>
+@{
+
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewBag.Title = "Admin Dashboard";
+}
+<h2>Welcome to the Admin Dashboard 👑</h2>
+<div class="container mt-4">
+<h2>Admin Dashboard 👑</h2>
+<p class="text-muted">Manage and view all items in the system</p>
+<hr />
+
+<!-- Items Table -->
+<h4 class="mt-4">Available Items</h4>
+<table class="table table-striped table-bordered">
+    <thead class="table-light">
+        <tr>
+            <th>#</th>
+            <th>Item Name</th>
+            <th>Category</th>
+            <th>Price (₦)</th>
+            <th>Quantity</th>
+            <th>Date Created</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (Model?.Data != null && Model.Data.Any())
+        {
+            int count = 1;
+            foreach (var item in Model.Data)
+            {
+                <tr>
+                    <td>@count</td>
+                    <td>@item.Name</td>
+                    <td>@item.Brand</td>
+                    <td>@item.Price.ToString().TrimEnd('0').TrimEnd('.')</td>
+                    <td>@item.QuantityInStock</td>
+                    <td>@item.DateCreated.ToShortDateString()</td>
+                    <td>
+                        <a asp-action="GetItemById" asp-Controller="Item" asp-route-id="@item.Id" class="btn btn-sm btn-primary">View</a>
+
+                        <a asp-action="Delete" asp-Controller="Item" asp-route-id="@item.Id" class="btn btn-sm btn-danger">Delete</a>
+                    </td>
+                </tr>
+                count++;
+            }
+        }
+        else
+        {
+            <tr>
+                <td colspan="8" class="text-center text-muted">No items found.</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+    <!-- Placeholder for Future Additions -->
+    <div class="mt-5">
+        <h5>📦 Future Admin Features (Coming Soon)</h5>
+        <div class="card p-3 shadow-sm text-center">
+            <p class="text-muted">Space reserved for analytics, reports, or item statistics.</p>
+        </div>
+    </div>
+</div>

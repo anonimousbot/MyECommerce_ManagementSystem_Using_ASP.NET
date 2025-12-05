@@ -1,0 +1,381 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewBag.Title - Admin Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.0/font/bootstrap-icons.min.css" rel="stylesheet" />
+    <style>
+        :root {
+            --bs-primary: #0d6efd;
+            --bs-secondary: #6c757d;
+            --bs-success: #198754;
+            --bs-danger: #dc3545;
+            --bs-warning: #ffc107;
+            --bs-info: #0dcaf0;
+            --bs-light: #f8f9fa;
+            --bs-dark: #212529;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--bs-light);
+            min-height: 100vh;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            background-color: var(--bs-dark);
+            color: white;
+            min-height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 280px;
+            overflow-y: auto;
+            z-index: 1030;
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            background-color: var(--bs-primary);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+            .sidebar-header h4 {
+                margin: 0;
+                font-weight: 700;
+                font-size: 1.5rem;
+            }
+
+            .sidebar-header p {
+                margin: 0.25rem 0 0 0;
+                font-size: 0.875rem;
+                opacity: 0.9;
+            }
+
+        .nav-section-title {
+            padding: 1rem 1.5rem 0.5rem;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--bs-secondary);
+            font-weight: 600;
+        }
+
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.85);
+            padding: 0.75rem 1.5rem;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+
+            .sidebar .nav-link:hover {
+                background-color: rgba(255, 255, 255, 0.1);
+                color: white;
+                border-left-color: var(--bs-primary);
+            }
+
+            .sidebar .nav-link.active {
+                background-color: var(--bs-primary);
+                color: white;
+                border-left-color: white;
+            }
+
+            .sidebar .nav-link i {
+                width: 20px;
+                margin-right: 0.75rem;
+            }
+
+        .toggle-icon {
+            float: right;
+            transition: transform 0.3s;
+        }
+
+        .nav-item.active .toggle-icon {
+            transform: rotate(90deg);
+        }
+
+        .submenu {
+            display: none;
+            background-color: rgba(0, 0, 0, 0.2);
+        }
+
+        .nav-item.active .submenu {
+            display: block;
+        }
+
+        .submenu .nav-link {
+            padding: 0.6rem 1.5rem 0.6rem 3.5rem;
+            font-size: 0.9rem;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 280px;
+            min-height: 100vh;
+            transition: margin-left 0.3s ease-in-out;
+        }
+
+        /* Top Navbar */
+        .top-navbar {
+            background-color: white;
+            border-bottom: 1px solid var(--bs-light);
+            padding: 1rem 1.5rem;
+            position: sticky;
+            top: 0;
+            z-index: 1020;
+        }
+
+        .navbar-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--bs-dark);
+            margin: 0;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--bs-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+        }
+
+        .user-name {
+            font-weight: 600;
+            color: var(--bs-dark);
+            margin: 0;
+        }
+
+        .user-role {
+            font-size: 0.8rem;
+            color: var(--bs-secondary);
+            margin: 0;
+        }
+
+        /* Page Content */
+        .page-content {
+            padding: 2rem;
+        }
+
+        /* Mobile Menu Toggle */
+        .mobile-menu-toggle {
+            display: none;
+        }
+
+        /* Sidebar Overlay for Mobile */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1025;
+        }
+
+        /* Responsive */
+        @@media (max-width: 991.98px) {
+            .sidebar
+
+        {
+            transform: translateX(-100%);
+        }
+
+        .sidebar.show {
+            transform: translateX(0);
+        }
+
+        .sidebar-overlay.show {
+            display: block;
+        }
+
+        .main-content {
+            margin-left: 0;
+        }
+
+        .mobile-menu-toggle {
+            display: inline-block;
+        }
+
+        .user-details {
+            display: none;
+        }
+
+        .page-content {
+            padding: 1rem;
+        }
+
+        }
+
+        @@media (max-width: 575.98px) {
+            .sidebar
+
+        {
+            width: 250px;
+        }
+
+        .navbar-title {
+            font-size: 1.25rem;
+        }
+
+        }</style>
+</head>
+<body>
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h4>EMS Admin</h4>
+            <p>Management Portal</p>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Main Menu</div>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link active" href="@Url.Action("Index", "Item")">
+                        <i class="bi bi-house-door"></i>
+                        Dashboard
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Inventory</div>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a href="javascript:void(0);" class="nav-link" onclick="toggleSubmenu(this)">
+                        <i class="bi bi-box-seam"></i>
+                        Items
+                        <span class="toggle-icon"><i class="bi bi-chevron-right"></i></span>
+                    </a>
+                    <ul class="submenu nav flex-column">
+                        <li><a class="nav-link" href="@Url.Action("Index", "Item")">View All Items</a></li>
+                        <li><a class="nav-link" href="@Url.Action("Create", "Item")">Add New Item</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Sales</div>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a href="javascript:void(0);" class="nav-link" onclick="toggleSubmenu(this)">
+                        <i class="bi bi-receipt"></i>
+                        Orders
+                        <span class="toggle-icon"><i class="bi bi-chevron-right"></i></span>
+                    </a>
+                    <ul class="submenu nav flex-column">
+                        <li><a class="nav-link" href="@Url.Action("Index", "Order")">All Orders</a></li>
+                        <li><a class="nav-link" href="@Url.Action("GetAllPendingOrder", "Order")">Pending Orders</a></li>
+                        <li><a class="nav-link" href="@Url.Action("GetAllProcessingOrder", "Order")">Processing Orders</a></li>
+                        <li><a class="nav-link" href="@Url.Action("GetAllDeliveredOrder", "Order")">Delivered Orders</a></li>
+                        <li><a class="nav-link" href="@Url.Action("GetAllCancelledOrder", "Order")">Cancelled Orders</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Users</div>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link" asp-action="GetAllCustomer" asp-controller="Customer">
+                        <i class="bi bi-people"></i>
+                        Customers
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="nav-section mt-auto">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link" href="@Url.Action("Logout", "User")">
+                        <i class="bi bi-box-arrow-right"></i>
+                        Logout
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Top Navbar -->
+        <nav class="top-navbar">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-3">
+                    <button class="btn btn-primary mobile-menu-toggle" onclick="toggleSidebar()">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    <h1 class="navbar-title">Admin Panel</h1>
+                </div>
+
+                <div class="d-flex align-items-center gap-3">
+                    <div class="user-info">
+                        <div class="user-avatar">A</div>
+                        <div class="user-details">
+                            <p class="user-name">Admin User</p>
+                            <p class="user-role">Administrator</p>
+                        </div>
+                    </div>
+                    <a href="@Url.Action("Logout", "User")" class="btn btn-danger">
+                        <i class="bi bi-box-arrow-right"></i> Logout
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Page Content -->
+        <main class="page-content">
+            @RenderBody()
+        </main>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function toggleSubmenu(element) {
+            const parent = element.parentElement;
+            parent.classList.toggle("active");
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('show');
+            overlay.classList.toggle('show');
+        }
+
+        // Close sidebar when clicking a link on mobile
+        if (window.innerWidth <= 991.98) {
+            document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    if (!this.getAttribute('onclick')) {
+                        toggleSidebar();
+                    }
+                });
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+﻿@using EMS.Models.DTOs
+
+@model BaseResponse<EMS.Models.DTOs.Items.ItemDto> 
+@{
+
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewBag.Title = "View Item";
+
+}
+@if (Model?.Data != null)
+{
+
+    <h2>Delete Item</h2>
+
+
+    <div class="alert alert-warning">
+        Are you sure you want to delete the following item?
+    </div>
+    
+<div>
+    <dl class="row">
+        @* <dt class="col-sm-2">Id</dt>
+        <dd class="col-sm-10">@Model.Data.Id</dd> *@
+
+        <dt class="col-sm-2">Name</dt>
+        <dd class="col-sm-10">@Model.Data.Name</dd>
+
+        <dt class="col-sm-2">Brand</dt>
+        <dd class="col-sm-10">@Model.Data.Brand</dd>
+
+        <dt class="col-sm-2">Price</dt>
+        <dd class="col-sm-10">@Model.Data.Price</dd>
+    </dl>
+</div>
+
+
+    <form asp-action="Delete" asp-route-id="@Model.Data.Id" asp-controller ="Item" method="post">
+        <button type="submit" class="btn btn-danger">Delete</button>
+        <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+    </form>
+
+}
+else
+{
+    <p>Item not found</p>
+}

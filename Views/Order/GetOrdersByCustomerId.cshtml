@@ -1,0 +1,45 @@
+﻿
+@using EMS.Models.DTOs
+
+@model BaseResponse<IEnumerable<EMS.Models.DTOs.Orders.OrderDto>>
+<h2>My Orders</h2>
+
+@if (Model.Data == null)
+{
+    <p>You have no orders yet.</p>
+}
+else
+{
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Total Quantity || Total Amount</th>
+                <th>Date Created</th>
+                <th>Delivery Address</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var order in Model.Data)
+            {
+                <tr>
+                   <td>@foreach(var item in order?.OrderItem)
+                        {
+                            <p>@item.Item.Name</p>
+                        }
+                    </td>
+                    <td>@order.OrderStatus</td>
+                    <td>@foreach(var item in order?.OrderItem)
+                        {
+                            <p>Qty: @item.Quantity || Price:@item.TotalPrice.ToString("C").TrimEnd('0').TrimEnd('.')</p>
+                            
+                        }
+                    </td>
+                    <td>@order.DateCreated</td>
+                    <td>@order.DeliveryAddress</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

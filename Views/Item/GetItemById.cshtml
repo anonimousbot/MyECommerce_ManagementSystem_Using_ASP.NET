@@ -1,0 +1,38 @@
+﻿@using EMS.Models.DTOs
+
+
+@{
+
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewBag.Title = "View Item";
+
+}
+@model BaseResponse<EMS.Models.DTOs.Items.ItemDto>
+
+<div class="container mt-4">
+    <h2 class="mb-3 text-center">Item Details</h2>
+    <div class="card shadow-sm p-4">
+        <dl class="row">
+            <dt class="col-sm-3">Name:</dt>
+            <dd class="col-sm-9">@Model.Data.Name</dd>
+
+            <dt class="col-sm-3">Brand:</dt>
+            <dd class="col-sm-9">@Model.Data.Brand</dd>
+
+            <dt class="col-sm-3">Price:</dt>
+            <dd class="col-sm-9">@Model.Data.Price</dd>
+
+            <dt class="col-sm-3">Quantity In Stock:</dt>
+            <dd class="col-sm-9">@Model.Data.QuantityInStock</dd>
+
+            <dt class="col-sm-3">Date Created:</dt>
+            <dd class="col-sm-9">@Model.Data.DateCreated</dd>
+        </dl>
+
+        <div class="mt-4">
+            <a asp-action="Index" asp-controller="Item" class="btn btn-secondary">Back to List</a>
+            <a asp-action="Update" asp-controller="Item" asp-route-id="@Model.Data.Id" class="btn btn-primary">Edit</a>
+            <a asp-action="Delete" asp-controller="Item" asp-route-id="@Model.Data.Id" class="btn btn-danger">Delete</a>
+        </div>
+    </div>
+</div>

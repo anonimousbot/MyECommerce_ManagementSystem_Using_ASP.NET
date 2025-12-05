@@ -1,0 +1,117 @@
+﻿@using EMS.Models.DTOs
+
+@model BaseResponse<EMS.Models.DTOs.Customers.CustomerDto>
+@{
+
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewBag.Title = "Admin Dashboard";
+}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-user-circle"></i> Customer Details</h2>
+                <a asp-action="GetAllCustomer" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to List
+                </a>
+            </div>
+
+            @if (Model != null && Model.Status)
+            {
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">@Model.Data.FirstName @Model.Data.LastName</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <dl class="row">
+                                    @* <dt class="col-sm-4">Customer ID:</dt>
+                                    <dd class="col-sm-8">@Model.Data.Id</dd> *@
+
+                                    <dt class="col-sm-4">First Name:</dt>
+                                    <dd class="col-sm-8">@Model.Data.FirstName</dd>
+
+                                    <dt class="col-sm-4">Last Name:</dt>
+                                    <dd class="col-sm-8">@Model.Data.LastName</dd>
+
+                                    <dt class="col-sm-4">Gender:</dt>
+                                    <dd class="col-sm-8">
+                                        <span class="badge bg-info">@Model.Data.Gender</span>
+                                    </dd>
+
+                                    <dt class="col-sm-4">Date of Birth:</dt>
+                                    <dd class="col-sm-8">@Model.Data.DateOfBirth?.ToString("MMMM dd, yyyy")</dd>
+                                </dl>
+                            </div>
+
+                            <div class="col-md-6">
+                                <dl class="row">
+                                    <dt class="col-sm-4">Phone Number:</dt>
+                                    <dd class="col-sm-8">
+                                        <i class="fas fa-phone"></i> @Model.Data.PhoneNumber
+                                    </dd>
+
+                                    <dt class="col-sm-4">Address:</dt>
+                                    <dd class="col-sm-8">
+                                        <i class="fas fa-map-marker-alt"></i> @Model.Data.Address
+                                    </dd>
+
+                                    <dt class="col-sm-4">Email:</dt>
+                                    <dd class="col-sm-8">
+                                        <i class="fas fa-envelope"></i> @Model.Data.User?.Email
+                                    </dd>
+
+                                    <dt class="col-sm-4">Date Created:</dt>
+                                    <dd class="col-sm-8">@Model.Data.DateCreated.ToString("MMMM dd, yyyy")</dd>
+                                </dl>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        @* <div class="d-flex gap-2">
+                            @* <a asp-action="GetOrdersByCustomerId" asp-controller="Order" asp-route-id="@Model.Data.Id" class="btn btn-info">
+                                <i class="fas fa-shopping-cart"></i> View Orders
+                            </a> 
+                        </div> *@
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-danger" role="alert">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Error:</strong> @(Model?.Message ?? "Customer not found.")
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border-radius: 10px;
+    }
+
+    .card-header {
+        border-radius: 10px 10px 0 0 !important;
+    }
+
+    dt {
+        font-weight: 600;
+        color: #495057;
+    }
+
+    dd {
+        color: #6c757d;
+    }
+
+    .gap-2 {
+        gap: 0.5rem;
+    }
+
+    .btn i {
+        margin-right: 5px;
+    }
+</style>

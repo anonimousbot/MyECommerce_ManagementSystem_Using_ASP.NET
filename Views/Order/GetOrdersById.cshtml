@@ -1,0 +1,61 @@
+﻿@using EMS.Models.DTOs
+
+@model BaseResponse<EMS.Models.DTOs.Orders.OrderDto>
+@{
+
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewBag.Title = "Orders";
+}
+<div class="container mt-4">
+    <h2 class="mb-4 text-center">All Orders</h2>
+
+        <table class="table table-bordered table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    @* <th>Order ID</th> *@
+                    <th>Customer Name</th>
+                    <th>Item Name</th>
+                    <th>Qty || UnitPrice</th>
+                    <th>Total Amount</th>
+                    <th>Status</th>
+                    <th>Address</th>
+                    <th>Date Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+               
+                    <tr>
+                        @* <td>@order.Id</td> *@
+                        <td>
+                            @Model.Data.Customer?.FullName()
+                        </td>
+                        <td>
+                            @foreach (var itemname in Model.Data?.OrderItem)
+                            {
+                                <p>@itemname.Item.Name</p>
+                            }
+                            
+                        </td>
+                        <td>
+                    @foreach (var item in Model.Data?.OrderItem)
+                            {
+                                <p>@item.Quantity  || @item.UnitPrice.ToString("C").TrimEnd('0').TrimEnd('.').</p>
+                            }
+                        </td>
+                        <td>@Model.Data.Amount.ToString("C").TrimEnd('0').TrimEnd('.')</td>
+                        <td>@Model.Data.OrderStatus</td>
+                        <td>@Model.Data.DeliveryAddress</td>
+                        <td>@Model.Data.DateCreated.ToString("dd-MMM-yyyy")</td>
+                        <td>
+                            <a asp-action="UpdateOrder" asp-route-id="@Model.Data.Id" asp-controller="Order" class="btn btn-sm btn-warning">Edit</a>
+                            <a asp-action="Delete" asp-controller="Order" asp-route-id="@Model.Data.Id" class="btn btn-sm btn-danger">Delete</a>
+                        </td>
+                        
+                    </tr>
+                
+
+            </tbody>
+        </table>
+    
+</div>

@@ -1,0 +1,55 @@
+﻿@using EMS.Models.DTOs
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewBag.Title = "Update Item";
+}
+@model BaseResponse<EMS.Models.DTOs.Items.ItemDto>
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0"><i class="fas fa-edit"></i> Update Item</h3>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Update" asp-controller="Item" method="post">
+                        @* Post the id as plain "id" so the action's id parameter binds *@
+                        <input type="hidden" name="id" value="@Model?.Data?.Id" />
+
+                        <div class="mb-3">
+                            <label class="form-label">Item Name</label>
+                            <input name="Name" class="form-control" placeholder="Enter item name" value="@Model?.Data?.Name" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Brand</label>
+                            <input name="Brand" class="form-control" placeholder="Enter brand" value="@Model?.Data?.Brand" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Price</label>
+                            <input name="Price" class="form-control" type="number" step="0.01" placeholder="0.00" value="@(Model?.Data?.Price ?? 0)" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Quantity In Stock</label>
+                            <input name="QuantityInStock" class="form-control" type="number" placeholder="0" value="@(Model?.Data?.QuantityInStock ?? 0)" />
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Update Item
+                            </button>
+                            <a asp-action="Index" asp-controller="Item" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Validation scripts can be re-enabled if you add client-side validation *@

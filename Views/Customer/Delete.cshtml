@@ -1,0 +1,363 @@
+﻿@using EMS.Models.DTOs
+
+@model BaseResponse<EMS.Models.DTOs.Customers.CustomerDto>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete Account - Confirmation</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+
+    <style>
+        :root {
+            --danger-gradient: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 2rem 1rem;
+        }
+
+        .delete-container {
+            max-width: 700px;
+            width: 100%;
+        }
+
+        .delete-card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+        }
+
+        .delete-header {
+            background: var(--danger-gradient);
+            padding: 3rem 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+            .delete-header::before {
+                content: '';
+                position: absolute;
+                top: -50%;
+                right: -20%;
+                width: 300px;
+                height: 300px;
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 50%;
+            }
+
+            .delete-header::after {
+                content: '';
+                position: absolute;
+                bottom: -30%;
+                left: -10%;
+                width: 250px;
+                height: 250px;
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 50%;
+            }
+
+        .warning-icon {
+            width: 100px;
+            height: 100px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            backdrop-filter: blur(10px);
+            position: relative;
+            z-index: 2;
+        }
+
+            .warning-icon i {
+                font-size: 3rem;
+                color: white;
+            }
+
+        .delete-header h1 {
+            color: white;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .delete-header p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.1rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .delete-body {
+            padding: 3rem 2rem;
+        }
+
+        .warning-box {
+            background: linear-gradient(135deg, #fff5f5 0%, #ffe0e0 100%);
+            border-left: 5px solid #dc3545;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+        }
+
+            .warning-box h5 {
+                color: #dc3545;
+                font-weight: 700;
+                margin-bottom: 1rem;
+                display: flex;
+                align-items: center;
+            }
+
+                .warning-box h5 i {
+                    margin-right: 0.5rem;
+                }
+
+            .warning-box ul {
+                margin-bottom: 0;
+                padding-left: 1.5rem;
+            }
+
+            .warning-box li {
+                color: #721c24;
+                margin-bottom: 0.5rem;
+            }
+
+        .account-info {
+            background: #f8f9fa;
+            padding: 2rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+        }
+
+        .account-detail {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+            .account-detail:last-child {
+                margin-bottom: 0;
+            }
+
+        .account-icon {
+            width: 50px;
+            height: 50px;
+            background: var(--primary-gradient);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.3rem;
+            flex-shrink: 0;
+        }
+
+        .account-text {
+            margin-left: 1rem;
+        }
+
+        .account-label {
+            font-size: 0.85rem;
+            color: #6c757d;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 0.2rem;
+        }
+
+        .account-value {
+            font-size: 1.1rem;
+            color: #2d3748;
+            font-weight: 600;
+        }
+
+        .confirmation-text {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+            .confirmation-text h4 {
+                color: #2d3748;
+                font-weight: 700;
+                margin-bottom: 1rem;
+            }
+
+            .confirmation-text p {
+                color: #6c757d;
+                font-size: 1.05rem;
+                line-height: 1.6;
+            }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .btn-delete-confirm {
+            background: var(--danger-gradient);
+            border: none;
+            color: white;
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(220, 53, 69, 0.4);
+        }
+
+            .btn-delete-confirm:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 15px 40px rgba(220, 53, 69, 0.5);
+                color: white;
+            }
+
+        .btn-cancel {
+            background: white;
+            border: 2px solid #667eea;
+            color: #667eea;
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+        }
+
+            .btn-cancel:hover {
+                background: var(--primary-gradient);
+                color: white;
+                border-color: #667eea;
+                transform: translateY(-3px);
+                box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
+            }
+
+        @@media (max-width: 768px) {
+            .delete-header
+
+        {
+            padding: 2rem 1rem;
+        }
+
+        .warning-icon {
+            width: 80px;
+            height: 80px;
+        }
+
+            .warning-icon i {
+                font-size: 2.5rem;
+            }
+
+        .delete-body {
+            padding: 2rem 1rem;
+        }
+
+        .action-buttons {
+            grid-template-columns: 1fr;
+        }
+
+        }</style>
+</head>
+
+<body>
+    <div class="delete-container">
+        <div class="delete-card">
+            <!-- Header -->
+            <div class="delete-header">
+                <div class="warning-icon">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                </div>
+                <h1>Delete Account</h1>
+                <p>This action is permanent and cannot be undone</p>
+            </div>
+
+            <!-- Body -->
+            <div class="delete-body">
+                <!-- Warning Box -->
+                <div class="warning-box">
+                    <h5>
+                        <i class="bi bi-shield-exclamation"></i>
+                        Warning: You are about to delete your account
+                    </h5>
+                    <ul>
+                        <li>All your personal information will be permanently deleted</li>
+                        <li>Your account history and records will be removed</li>
+                        <li>This action cannot be reversed or undone</li>
+                        <li>You will lose access to all services immediately</li>
+                    </ul>
+                </div>
+
+                <!-- Account Information -->
+                <div class="account-info">
+                    <div class="account-detail">
+                        <div class="account-icon">
+                            <i class="bi bi-person-fill"></i>
+                        </div>
+                        <div class="account-text">
+                            <div class="account-label">Account Name</div>
+                            <div class="account-value">@Model.Data.FirstName  @Model.Data.LastName</div>
+                        </div>
+                    </div>
+
+                    @* <div class="account-detail">
+                        <div class="account-icon">
+                            <i class="bi bi-envelope-fill"></i>
+                        </div>
+                        <div class="account-text">
+                            <div class="account-label">Phone Number</div>
+                            <div class="account-value">@Model.Data.PhoneNumber</div>
+                        </div>
+                    </div>
+
+                    <div class="account-detail">
+                        <div class="account-icon">
+                            <i class="bi bi-calendar-check-fill"></i>
+                        </div>
+                        <div class="account-text">
+                            <div class="account-label">Member Since</div>
+                            <div class="account-value">@Model.Data.DateCreated.ToShortDateString()</div>
+                        </div>
+                    </div> *@
+                </div>
+
+                <!-- Confirmation Text -->
+                <div class="confirmation-text">
+                    <h4>Are you absolutely sure?</h4>
+                    <p>
+                        Please review the information above carefully. Once you confirm,
+                        your account and all associated data will be permanently deleted
+                        from our system.
+                    </p>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <a class="btn btn-cancel" asp-action="CustomerProfile"  asp-route-id="@Model.Data.Id">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </a>
+
+                    <form asp-action="Delete" asp-route-id="@Model.Data.Id" method="post" style="margin: 0;">
+                        <button type="submit" class="btn btn-delete-confirm w-100">
+                            <i class="bi bi-trash3-fill me-2"></i>Yes, Delete Account
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

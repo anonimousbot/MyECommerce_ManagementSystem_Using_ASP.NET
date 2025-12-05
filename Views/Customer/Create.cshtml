@@ -1,0 +1,127 @@
+﻿@using EMS.Models.Enums
+@model EMS.Models.DTOs.Customers.CreateCustomerRequestModel
+
+@{
+
+    Layout = "~/Views/Shared/_LoginLayout.cshtml";
+    ViewBag.Title = "Create Customer";
+}
+
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Create Customer</h4>
+                    <a asp-controller="User" asp-action="Login" class="btn btn-sm btn-outline-secondary">Back</a>
+                </div>
+
+                <div class="card-body">
+
+                    <div class="container mt-4">
+                        @if (!string.IsNullOrEmpty(ViewBag.Alert as string))
+                        {
+                            <div id="responseAlert" class="alert alert-@ViewBag.AlertType text-center" role="alert">
+                                @ViewBag.Alert
+                            </div>
+                            <script>
+                                document.addEventListener("DOMContentLoaded", () => {
+                                    setTimeout(() => {
+                                        const alert = document.getElementById('responseAlert');
+                                        if (alert) {
+                                            alert.style.transition = "opacity 0.6s ease";
+                                            alert.style.opacity = 0;
+                                            setTimeout(() => alert.remove(), 600);
+                                        }
+                                    }, 4000);
+                                });
+                            </script>
+                        }
+                    </div>
+
+                    <form asp-controller="Customer" asp-action="Create" method="post" novalidate>
+                        @Html.AntiForgeryToken()
+                        <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="FirstName" class="form-label"></label>
+                                <input asp-for="FirstName" class="form-control" />
+                                <span asp-validation-for="FirstName" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="LastName" class="form-label"></label>
+                                <input asp-for="LastName" class="form-control" />
+                                <span asp-validation-for="LastName" class="text-danger"></span>
+                               
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Email" class="form-label"></label>
+                            <input asp-for="Email" class="form-control" />
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                          
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="PasswordHash" class="form-label">Password</label>
+                                <input asp-for="PasswordHash" type="password" class="form-control" />
+                                <span asp-validation-for="PasswordHash" class="text-danger"></span>
+                               
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="ConfirmPassword" class="form-label"></label>
+                                <input asp-for="ConfirmPassword" type="password" class="form-control" />
+                                <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="DateOfBirth" class="form-label"></label>
+                                <input asp-for="DateOfBirth" type="date" class="form-control "min="1900-01-01"
+                                max="@DateTime.Today.AddYears(-10).ToString("yyyy-MM-dd")" onkeydown="return false" onkeypress="return false" onpaste/>
+                                <span asp-validation-for="DateOfBirth" class="text-danger"></span>
+                               
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="Gender" class="form-label"></label>
+                                <select asp-for="Gender" asp-items="@Html.GetEnumSelectList(typeof(Gender))" required>
+                                </select>
+                               
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="PhoneNumber" class="form-label"></label>
+                                <input asp-for="PhoneNumber" class="form-control" inputmode="numeric" pattern="[0-9]*" maxlength="11"/>
+                                <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                                
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Address" class="form-label"></label>
+                            <textarea asp-for="Address" class="form-control" rows="2"></textarea>
+                            <span asp-validation-for="Address" class="text-danger"></span>
+                           
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">Create</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
