@@ -85,13 +85,17 @@
             border-radius: 999px;
             background: rgba(100, 116, 139, 0.28);
         }
+
+        body.sidebar-open {
+            overflow: hidden;
+        }
     </style>
 
     @RenderSection("Head", required: false)
 </head>
 <body class="min-h-screen bg-brand-shell text-brand-ink">
     <div class="min-h-screen">
-        <aside id="adminSidebar" class="fixed inset-y-0 left-0 z-50 flex w-72 -translate-x-full flex-col border-r border-brand-line bg-brand-ink text-white shadow-nav transition-transform duration-300 lg:translate-x-0">
+        <aside id="adminSidebar" class="admin-scroll fixed inset-y-0 left-0 z-50 flex w-[86vw] max-w-72 -translate-x-full flex-col overflow-y-auto border-r border-brand-line bg-brand-ink text-white shadow-nav transition-transform duration-300 lg:w-72 lg:translate-x-0">
             <div class="border-b border-white/10 px-6 py-6">
                 <div class="flex items-start justify-between gap-3">
                     <div>
@@ -114,28 +118,28 @@
             </div>
 
             <nav class="flex-1 space-y-2 px-4 py-5">
-                <a href="@Url.Action("Index", "Admin")" class="flex items-center gap-3 rounded-2xl px-4 py-3 transition @(isDashboard ? "bg-white text-brand-ink shadow-admin" : "text-slate-300 hover:bg-white/8 hover:text-white")">
+                <a href="@Url.Action("Index", "Admin")" data-sidebar-link class="flex items-center gap-3 rounded-2xl px-4 py-3 transition @(isDashboard ? "bg-white text-brand-ink shadow-admin" : "text-slate-300 hover:bg-white/8 hover:text-white")">
                     <span class="material-symbols-outlined">dashboard</span>
                     <span class="flex-1">
                         <span class="block text-sm font-semibold">Analytics</span>
                         <span class="block text-xs @(isDashboard ? "text-brand-muted" : "text-slate-400")">Revenue, stock, and activity</span>
                     </span>
                 </a>
-                <a href="@Url.Action("Index", "Item")" class="flex items-center gap-3 rounded-2xl px-4 py-3 transition @(isProducts ? "bg-white text-brand-ink shadow-admin" : "text-slate-300 hover:bg-white/8 hover:text-white")">
+                <a href="@Url.Action("Index", "Item")" data-sidebar-link class="flex items-center gap-3 rounded-2xl px-4 py-3 transition @(isProducts ? "bg-white text-brand-ink shadow-admin" : "text-slate-300 hover:bg-white/8 hover:text-white")">
                     <span class="material-symbols-outlined">inventory_2</span>
                     <span class="flex-1">
                         <span class="block text-sm font-semibold">Products</span>
                         <span class="block text-xs @(isProducts ? "text-brand-muted" : "text-slate-400")">Catalog and stock operations</span>
                     </span>
                 </a>
-                <a href="@Url.Action("GetAllCustomer", "Customer")" class="flex items-center gap-3 rounded-2xl px-4 py-3 transition @(isCustomers ? "bg-white text-brand-ink shadow-admin" : "text-slate-300 hover:bg-white/8 hover:text-white")">
+                <a href="@Url.Action("GetAllCustomer", "Customer")" data-sidebar-link class="flex items-center gap-3 rounded-2xl px-4 py-3 transition @(isCustomers ? "bg-white text-brand-ink shadow-admin" : "text-slate-300 hover:bg-white/8 hover:text-white")">
                     <span class="material-symbols-outlined">groups</span>
                     <span class="flex-1">
                         <span class="block text-sm font-semibold">Customers</span>
                         <span class="block text-xs @(isCustomers ? "text-brand-muted" : "text-slate-400")">Profiles and account history</span>
                     </span>
                 </a>
-                <a href="@Url.Action("Index", "Order")" class="flex items-center gap-3 rounded-2xl px-4 py-3 transition @(isOrders ? "bg-white text-brand-ink shadow-admin" : "text-slate-300 hover:bg-white/8 hover:text-white")">
+                <a href="@Url.Action("Index", "Order")" data-sidebar-link class="flex items-center gap-3 rounded-2xl px-4 py-3 transition @(isOrders ? "bg-white text-brand-ink shadow-admin" : "text-slate-300 hover:bg-white/8 hover:text-white")">
                     <span class="material-symbols-outlined">conveyor_belt</span>
                     <span class="flex-1">
                         <span class="block text-sm font-semibold">Orders</span>
@@ -146,14 +150,27 @@
 
             <div class="border-t border-white/10 px-6 py-6">
                 <div class="space-y-3">
-                    <a href="@Url.Action("Store", "Home")" class="flex items-center gap-3 text-sm text-slate-300 transition hover:text-white">
+                    <a href="@Url.Action("Store", "Home")" data-sidebar-link class="flex items-center gap-3 text-sm text-slate-300 transition hover:text-white">
                         <span class="material-symbols-outlined">storefront</span>
                         View storefront
                     </a>
-                    <a href="@Url.Action("Logout", "User")" class="flex items-center gap-3 text-sm text-rose-200 transition hover:text-white">
-                        <span class="material-symbols-outlined">logout</span>
-                        Sign out
-                    </a>
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <form asp-controller="User" asp-action="Logout" method="post" class="m-0">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="flex w-full items-center gap-3 border-0 bg-transparent p-0 text-sm text-rose-200 transition hover:text-white">
+                                <span class="material-symbols-outlined">logout</span>
+                                Sign out
+                            </button>
+                        </form>
+                    }
+                    else
+                    {
+                        <a asp-controller="User" asp-action="Login" class="flex items-center gap-3 text-sm text-sky-200 transition hover:text-white">
+                            <span class="material-symbols-outlined">login</span>
+                            Sign in
+                        </a>
+                    }
                 </div>
             </div>
         </aside>
@@ -200,7 +217,7 @@
                 <div class="mx-auto flex w-full max-w-shell flex-col gap-4 px-4 py-6 text-sm text-brand-muted sm:px-6 lg:flex-row lg:items-center lg:justify-between xl:px-8">
                     <div>
                         <p class="font-semibold text-brand-slate">EMS Solutions</p>
-                        <p class="mt-1">© @year Electrical Management System. Operational dashboard for stock, orders, and customer support.</p>
+                        <p class="mt-1">&copy; @year Electrical Management System. Operational dashboard for stock, orders, and customer support.</p>
                     </div>
                     <div class="flex flex-wrap items-center gap-4">
                         <a href="@Url.Action("Privacy", "Home")" class="transition hover:text-brand-primary">Privacy</a>
@@ -217,16 +234,50 @@
     <script>
         const adminSidebar = document.getElementById("adminSidebar");
         const adminSidebarBackdrop = document.getElementById("adminSidebarBackdrop");
+        const adminSidebarLinks = document.querySelectorAll("[data-sidebar-link]");
+        const adminDesktopMediaQuery = window.matchMedia("(min-width: 1024px)");
+
+        function syncAdminSidebar() {
+            if (adminDesktopMediaQuery.matches) {
+                adminSidebar.classList.remove("-translate-x-full");
+                adminSidebarBackdrop.classList.add("hidden");
+                document.body.classList.remove("sidebar-open");
+                return;
+            }
+
+            if (!document.body.classList.contains("sidebar-open")) {
+                adminSidebar.classList.add("-translate-x-full");
+            }
+        }
 
         function openAdminSidebar() {
             adminSidebar.classList.remove("-translate-x-full");
             adminSidebarBackdrop.classList.remove("hidden");
+            document.body.classList.add("sidebar-open");
         }
 
         function closeAdminSidebar() {
             adminSidebar.classList.add("-translate-x-full");
             adminSidebarBackdrop.classList.add("hidden");
+            document.body.classList.remove("sidebar-open");
         }
+
+        adminSidebarLinks.forEach(link => {
+            link.addEventListener("click", () => {
+                if (!adminDesktopMediaQuery.matches) {
+                    closeAdminSidebar();
+                }
+            });
+        });
+
+        document.addEventListener("keydown", event => {
+            if (event.key === "Escape" && document.body.classList.contains("sidebar-open")) {
+                closeAdminSidebar();
+            }
+        });
+
+        adminDesktopMediaQuery.addEventListener("change", syncAdminSidebar);
+        syncAdminSidebar();
     </script>
 
     @RenderSection("Scripts", required: false)
