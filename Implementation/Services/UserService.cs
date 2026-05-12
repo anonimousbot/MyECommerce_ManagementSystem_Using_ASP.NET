@@ -43,8 +43,31 @@ namespace EMS.Implementation.Services
                 };
             }
             var roles = await _userManager.GetRolesAsync(user);
-            var role = roles.FirstOrDefault() ?? string.Empty;
-            if (role == "Customer")
+            var isAdmin = roles.Any(r => r.Equals("Admin", StringComparison.OrdinalIgnoreCase));
+            var isCustomer = roles.Any(r => r.Equals("Customer", StringComparison.OrdinalIgnoreCase));
+
+            if (isAdmin)
+            {
+                return new BaseResponse<UserDto>
+                {
+                    Message = "Admin profile fetched",
+                    Status = true,
+                    Data = new UserDto
+                    {
+                        Id = user.Id,
+                        Email = user.Email,
+                        Roles = roles.Select(r => new RoleDto { Name = r }).ToList(),
+                        Admin = new AdminDto
+                        {
+                            FullName = user.Admin != null
+                                ? $"{user.Admin.FirstName} {user.Admin.LastName}"
+                                : string.Empty
+                        }
+                    }
+                };
+            }
+
+            if (isCustomer)
             {
                 return new BaseResponse<UserDto>
                 {
@@ -74,22 +97,9 @@ namespace EMS.Implementation.Services
 
             return new BaseResponse<UserDto>
             {
-                Message = "Admin profile fetched",
-                Status = true,
-                Data = new UserDto
-                {
-                    Id = user.Id,
-                    Email = user.Email,
-                    Roles = role.Select(r => new RoleDto { Name = role }).ToList(),
-                    Admin = new AdminDto
-                    {
-                        FullName = $"{user.Admin.FirstName} {user.Admin.LastName}"
-
-                    }
-
-                }
+                Message = "User has no recognized role",
+                Status = false
             };
-
         }
         public async Task<BaseResponse<UserDto>> GetUserProfileByUserId(Guid userId, CancellationToken cancellationToken)
         {
@@ -103,9 +113,31 @@ namespace EMS.Implementation.Services
                 };
             }
             var roles = await _userManager.GetRolesAsync(user);
-            var role = roles.FirstOrDefault() ?? string.Empty;
+            var isAdmin = roles.Any(r => r.Equals("Admin", StringComparison.OrdinalIgnoreCase));
+            var isCustomer = roles.Any(r => r.Equals("Customer", StringComparison.OrdinalIgnoreCase));
 
-            if (role == "Customer")
+            if (isAdmin)
+            {
+                return new BaseResponse<UserDto>
+                {
+                    Message = "Admin profile fetched",
+                    Status = true,
+                    Data = new UserDto
+                    {
+                        Id = user.Id,
+                        Email = user.Email,
+                        Roles = roles.Select(r => new RoleDto { Name = r }).ToList(),
+                        Admin = new AdminDto
+                        {
+                            FullName = user.Admin != null
+                                ? $"{user.Admin.FirstName} {user.Admin.LastName}"
+                                : string.Empty
+                        }
+                    }
+                };
+            }
+
+            if (isCustomer)
             {
                 return new BaseResponse<UserDto>
                 {
@@ -135,23 +167,9 @@ namespace EMS.Implementation.Services
             
             return new BaseResponse<UserDto>
             {
-                Message = "Admin profile fetched",
-                Status = true,
-                Data = new UserDto
-                {
-                    Id = user.Id,
-                    Email = user.Email,
-                    Roles = role.Select(r => new RoleDto { Name = role }).ToList(),
-                    Admin = new AdminDto
-                    {
-                        FullName = $"{user.Admin.FirstName} {user.Admin.LastName}"
-                        
-                    }
-
-                }
+                Message = "User has no recognized role",
+                Status = false
             };
-
-
         }
 
         public async Task<BaseResponse<LoginResponseModel>> GoogleLoginOrRegisterAsync(GoogleUserDTO googleUser, CancellationToken cancellationToken)
@@ -182,10 +200,27 @@ namespace EMS.Implementation.Services
                 };
             }
             var roles = await _userManager.GetRolesAsync(user);
+            var isAdmin = roles.Any(r => r.Equals("Admin", StringComparison.OrdinalIgnoreCase));
+            var isCustomer = roles.Any(r => r.Equals("Customer", StringComparison.OrdinalIgnoreCase));
 
-            var role = roles.FirstOrDefault() ?? string.Empty;
+            if (isAdmin)
+            {
+                return new BaseResponse<LoginResponseModel>
+                {
+                    Message = "Login successful",
+                    Status = true,
+                    Data = new LoginResponseModel
+                    {
+                        UserId = user.Id,
+                        Email = user.Email,
+                        Roles = roles.Select(r => new RoleDto { Name = r }).ToList(),
+                        FirstName = user.Admin != null ? user.Admin.FirstName : string.Empty,
+                        FullName = user.Admin != null ? user.Admin.FullName() : string.Empty,
+                    }
+                };
+            }
 
-            if (role == "Customer")
+            if (isCustomer)
             {
                 return new BaseResponse<LoginResponseModel>
                 {
@@ -198,28 +233,15 @@ namespace EMS.Implementation.Services
                         Email = user.Email,
                         Roles = roles.Select(r => new RoleDto { Name = r }).ToList(),
                         FirstName = user.Customer != null ? $"{user.Customer.FirstName}" : string.Empty,
-                        FullName = user.Admin != null ? $"{user.Customer?.FullName()}" : string.Empty,
-
-
-
-
+                        FullName = user.Customer != null ? $"{user.Customer.FullName()}" : string.Empty,
                     }
                 };
             }
            
             return new BaseResponse<LoginResponseModel>
             {
-                Message = "Login successful",
-                Status = true,
-                Data = new LoginResponseModel
-                {
-                    UserId = user.Id,
-                    Email = user.Email,
-                    Roles = role.Select(r => new RoleDto { Name = role }).ToList(),
-                    FirstName = user.Admin != null ? $"{user.Admin.FirstName}" : string.Empty,
-                    FullName = user.Admin != null ? $"{user.Admin.FullName()}" : string.Empty,
-
-                }
+                Message = "User has no recognized role",
+                Status = false
             };
         }
        

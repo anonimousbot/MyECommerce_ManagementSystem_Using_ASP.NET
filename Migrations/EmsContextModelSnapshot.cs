@@ -82,6 +82,63 @@ namespace EMS.Migrations
                         });
                 });
 
+            modelBuilder.Entity("EMS.Models.Entities.Cart", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("DateCreated")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime>("DateModified")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId")
+                        .IsUnique();
+
+                    b.ToTable("Carts");
+                });
+
+            modelBuilder.Entity("EMS.Models.Entities.CartItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("CartId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("DateCreated")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime>("DateModified")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasColumnType("decimal(65,30)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ItemId");
+
+                    b.HasIndex("CartId", "ItemId")
+                        .IsUnique();
+
+                    b.ToTable("CartItems");
+                });
+
             modelBuilder.Entity("EMS.Models.Entities.Customer", b =>
                 {
                     b.Property<Guid>("Id")
@@ -143,6 +200,9 @@ namespace EMS.Migrations
                     b.Property<DateTime>("DateModified")
                         .HasColumnType("datetime(6)");
 
+                    b.Property<string>("ImagePath")
+                        .HasColumnType("longtext");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("longtext");
@@ -183,9 +243,15 @@ namespace EMS.Migrations
                     b.Property<byte>("OrderStatus")
                         .HasColumnType("tinyint unsigned");
 
+                    b.Property<string>("PaymentReference")
+                        .HasColumnType("varchar(255)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CustomerId");
+
+                    b.HasIndex("PaymentReference")
+                        .IsUnique();
 
                     b.ToTable("Orders");
                 });
@@ -226,6 +292,64 @@ namespace EMS.Migrations
                     b.ToTable("OrderItems");
                 });
 
+            modelBuilder.Entity("EMS.Models.Entities.Payment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(65,30)");
+
+                    b.Property<int>("AmountKobo")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CheckoutSnapshotJson")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("DateCreated")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime>("DateModified")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("longtext");
+
+                    b.Property<Guid?>("OrderId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime?>("PaidAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Reference")
+                        .IsRequired()
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<byte>("Status")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("OrderId")
+                        .IsUnique();
+
+                    b.HasIndex("Reference")
+                        .IsUnique();
+
+                    b.ToTable("Payments");
+                });
+
             modelBuilder.Entity("EMS.Models.Entities.Role", b =>
                 {
                     b.Property<Guid>("Id")
@@ -261,8 +385,8 @@ namespace EMS.Migrations
                         },
                         new
                         {
-                            Id = new Guid("37b7677f-4d73-4bad-9cb6-103dfec911b1"),
-                            DateCreated = new DateTime(2025, 11, 23, 13, 29, 58, 434, DateTimeKind.Utc).AddTicks(1712),
+                            Id = new Guid("67cb1ae1-91ab-480f-a236-d7f676f7ab99"),
+                            DateCreated = new DateTime(2026, 4, 1, 13, 15, 59, 214, DateTimeKind.Utc).AddTicks(1295),
                             DateModified = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Can Order Items from the Store",
                             Name = "Customer"
@@ -361,6 +485,36 @@ namespace EMS.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("EMS.Models.Entities.Cart", b =>
+                {
+                    b.HasOne("EMS.Models.Entities.Customer", "Customer")
+                        .WithOne("Cart")
+                        .HasForeignKey("EMS.Models.Entities.Cart", "CustomerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Customer");
+                });
+
+            modelBuilder.Entity("EMS.Models.Entities.CartItem", b =>
+                {
+                    b.HasOne("EMS.Models.Entities.Cart", "Cart")
+                        .WithMany("Items")
+                        .HasForeignKey("CartId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("EMS.Models.Entities.Item", "Item")
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Cart");
+
+                    b.Navigation("Item");
+                });
+
             modelBuilder.Entity("EMS.Models.Entities.Customer", b =>
                 {
                     b.HasOne("EMS.Models.Entities.User", "User")
@@ -402,6 +556,24 @@ namespace EMS.Migrations
                     b.Navigation("Order");
                 });
 
+            modelBuilder.Entity("EMS.Models.Entities.Payment", b =>
+                {
+                    b.HasOne("EMS.Models.Entities.Customer", "Customer")
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("EMS.Models.Entities.Order", "Order")
+                        .WithOne()
+                        .HasForeignKey("EMS.Models.Entities.Payment", "OrderId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("Customer");
+
+                    b.Navigation("Order");
+                });
+
             modelBuilder.Entity("EMS.Models.Entities.UserRole", b =>
                 {
                     b.HasOne("EMS.Models.Entities.Role", "Role")
@@ -421,8 +593,15 @@ namespace EMS.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("EMS.Models.Entities.Cart", b =>
+                {
+                    b.Navigation("Items");
+                });
+
             modelBuilder.Entity("EMS.Models.Entities.Customer", b =>
                 {
+                    b.Navigation("Cart");
+
                     b.Navigation("Orders");
                 });
 

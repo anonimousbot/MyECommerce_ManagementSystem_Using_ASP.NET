@@ -10,6 +10,5 @@ namespace EMS.Models.DTOs.Orders
         public decimal Amount { get; set; }
         public Guid CustomerId { get; set; }
         public decimal TotalAmount => Quantity * Amount;
-        public Status Status {  get; set; }
     }
 }

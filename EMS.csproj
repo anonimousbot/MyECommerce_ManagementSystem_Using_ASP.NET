@@ -22,4 +22,11 @@
     <PackageReference Include="Scrutor" Version="6.1.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="tests\**\*.cs" />
+    <Content Remove="tests\**\*" />
+    <EmbeddedResource Remove="tests\**\*" />
+    <None Remove="tests\**\*" />
+  </ItemGroup>
+
 </Project>

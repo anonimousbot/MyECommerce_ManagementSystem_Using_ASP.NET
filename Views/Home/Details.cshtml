@@ -1,0 +1,128 @@
+@using EMS.Models.DTOs
+@using EMS.Models.DTOs.Items
+@model BaseResponse<ItemDto>
+
+@{
+    Layout = "~/Views/Shared/_StoreLayout.cshtml";
+    ViewBag.Title = $"{Model?.Data?.Name ?? "Product"} | T-Socket Gadgets";
+    var item = Model.Data!;
+    var isCustomer = User?.IsInRole("Customer") ?? false;
+    var isAuthenticated = User?.Identity?.IsAuthenticated ?? false;
+    var returnUrl = $"{Context.Request.Path}{Context.Request.QueryString}";
+    var buyUrl = Url.Action("CreateOrder", "Order", new { itemId = item.Id }) ?? "#";
+    var loginForCartUrl = Url.Action("Login", "User", new { returnUrl }) ?? "#";
+    var loginForBuyUrl = Url.Action("Login", "User", new { returnUrl = buyUrl }) ?? "#";
+}
+
+<style>
+    .shell {
+        border: 1px solid rgba(23, 32, 51, 0.08);
+        border-radius: 24px;
+        background: rgba(255,255,255,0.94);
+        box-shadow: 0 20px 48px rgba(23, 32, 51, 0.08);
+        overflow: hidden;
+    }
+
+    .media {
+        height: 420px;
+        background: linear-gradient(135deg, rgba(2, 6, 23, 0.04), rgba(2, 6, 23, 0.02));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+    }
+
+    .media img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .btn-brand {
+        background: linear-gradient(135deg, #7c3aed, #5521b5);
+        border: none;
+        color: #1b2230;
+        font-weight: 800;
+        border-radius: 14px;
+        padding: 0.9rem 1rem;
+    }
+
+    .btn-brand:hover {
+        background: #5521b5;
+        color: #1b2230;
+    }
+
+    .btn-soft {
+        border: 1px solid rgba(23, 32, 51, 0.10);
+        background: rgba(255,255,255,0.9);
+        border-radius: 14px;
+        padding: 0.9rem 1rem;
+        font-weight: 800;
+    }
+</style>
+
+<div class="mb-3">
+    <a class="text-decoration-none" asp-controller="Home" asp-action="Store"><i class="bi bi-arrow-left"></i> Back to store</a>
+</div>
+
+<div class="shell">
+    <div class="row g-0">
+        <div class="col-lg-6">
+            <div class="media">
+                @if (!string.IsNullOrWhiteSpace(item.ImagePath))
+                {
+                    <img src="@item.ImagePath" alt="@item.Name" />
+                }
+                else
+                {
+                    <div class="text-center text-muted">
+                        <i class="bi bi-image fs-1"></i>
+                        <div class="small">No image</div>
+                    </div>
+                }
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="p-4 p-lg-5">
+                <div class="text-muted small">@item.Brand</div>
+                <h1 class="h3 fw-bold mb-2">@item.Name</h1>
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <span class="badge rounded-pill text-bg-dark">Verified</span>
+                    <span class="badge rounded-pill @(item.QuantityInStock <= 5 ? "text-bg-danger" : "text-bg-success")">
+                        @(item.QuantityInStock <= 5 ? $"Low stock: {item.QuantityInStock}" : $"In stock: {item.QuantityInStock}")
+                    </span>
+                </div>
+
+                <div class="display-6 fw-bold mb-3">&#8358; @item.Price.ToString("N2")</div>
+
+                <div class="d-grid gap-2">
+                    @if (isAuthenticated && isCustomer)
+                    {
+                        <form asp-controller="Cart" asp-action="AddToCart" method="post" class="d-grid">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="itemId" value="@item.Id" />
+                            <input type="hidden" name="quantity" value="1" />
+                            <input type="hidden" name="returnUrl" value="@returnUrl" />
+                            <button type="submit" class="btn btn-brand"><i class="bi bi-bag-plus me-1"></i>Add to cart</button>
+                        </form>
+                        <a class="btn btn-dark" href="@buyUrl"><i class="bi bi-lightning-charge me-1"></i>Buy now</a>
+                    }
+                    else
+                    {
+                        <a class="btn btn-brand" href="@loginForCartUrl"><i class="bi bi-bag-plus me-1"></i>Add to cart</a>
+                        <a class="btn btn-dark" href="@loginForBuyUrl"><i class="bi bi-lightning-charge me-1"></i>Buy now</a>
+                    }
+
+                    <a class="btn btn-soft" asp-controller="User" asp-action="Login" asp-route-returnUrl="@returnUrl">
+                        <i class="bi bi-shield-lock me-1"></i>Sign in for faster checkout
+                    </a>
+                </div>
+
+                <hr class="my-4" />
+                <div class="small text-muted">
+                    Added on: @item.DateCreated.ToString("MMM dd, yyyy")
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

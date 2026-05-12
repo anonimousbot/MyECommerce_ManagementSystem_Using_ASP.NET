@@ -9,6 +9,7 @@ namespace EMS.Models.DTOs.Items
         public string Brand { get; set; }
         public decimal Price { get; set; }
         public int QuantityInStock { get; set; }
+        public string? ImagePath { get; set; }
         // COllection of OrderItems
         public ICollection<OrderItem>? OrderItem { get; set; } = []; 
         public DateTime DateCreated { get; set; }

@@ -22,11 +22,11 @@
                         <input type="text" class="form-control" value="@ViewBag.OrderStatus" disabled />
                     </div>
 
-                    <form asp-action ="UpdateOrder" asp-controller="Order" method="post">
+                    <form asp-action="UpdateOrder" asp-controller="Order" asp-route-id="@Model.Data.Id" method="post">
+                        @Html.AntiForgeryToken()
                         <div class="mt-3 mb-4">
                             <label class="form-label fw-bold">New Status</label>
-                            <select asp-for="Status" asp-items="@Html.GetEnumSelectList(typeof(Status))" required>
-                            </select>
+                            <select name="Status" class="form-select" asp-items="@Html.GetEnumSelectList(typeof(Status))" required></select>
                         </div>
 
                         <button type="submit" class="btn btn-primary w-100 py-2 rounded-3 fw-bold">

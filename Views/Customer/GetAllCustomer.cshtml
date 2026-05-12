@@ -1,67 +1,259 @@
 ﻿@using EMS.Models.DTOs
-
 @model BaseResponse<IReadOnlyList<EMS.Models.DTOs.Customers.CustomerDto>>
+
 @{
-
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
-    ViewBag.Title = "Admin Dashboard";
+    ViewBag.Title = "Customer Management";
 }
-<h2>Welcome to the Admin Dashboard </h2>
-<div class="container mt-4">
-    <h2>Admin Dashboard </h2>
-    <p class="text-muted">Manage and view all items in the system</p>
-    <hr />
 
-    <!-- Items Table -->
-    <h4 class="mt-4">Available Items</h4>
-    <table class="table table-striped table-bordered">
-        <thead class="table-light">
-            <tr>
-                <th>#</th>
-                <th>Customer Name</th>
-                <th>Address</th>
-                <th>Gender</th>
-                <th>D. O. B</th>
-                <th>Phone Number</th>
-                <th>Date Created</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            @if (Model?.Data != null && Model.Data.Any())
-            {
-                int count = 1;
-                foreach (var item in Model.Data)
-                {
-                    <tr>
-                        <td>@count</td>
-                        <td>@item.FullName</td>
-                        <td>@item.Address</td>
-                        <td>@item.Gender</td>
-                        <th>@item.DateOfBirth?.ToShortDateString()</th>
-                        <td>@item.PhoneNumber</td>
-                        <td>@item.DateCreated.ToShortDateString()</td>
-                        <td>
-                            <a asp-action="GetCustomerById" asp-Controller="Customer" asp-route-id="@item.Id" class="btn btn-sm btn-primary">View</a>
-                        </td>
-                    </tr>
-                    count++;
-                }
-            }
-            else
-            {
-                <tr>
-                    <td colspan="8" class="text-center text-muted">No items found.</td>
-                </tr>
-            }
-        </tbody>
-    </table>
+<style>
+    /* Entrance Animations */
+    .fade-up {
+        animation: fadeInUp 0.6s ease-out forwards;
+        opacity: 0;
+    }
 
-    <!-- Placeholder for Future Additions -->
-    <div class="mt-5">
-        <h5>📦 Future Admin Features (Coming Soon)</h5>
-        <div class="card p-3 shadow-sm text-center">
-            <p class="text-muted">Space reserved for analytics, reports, or item statistics.</p>
+    .stagger-row {
+        opacity: 0;
+        animation: slideInRight 0.4s ease-out forwards;
+    }
+
+    @@keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@keyframes slideInRight {
+        from {
+            opacity: 0;
+            transform: translateX(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    /* Card & Table Styling */
+    .glass-card {
+        background: white;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        overflow: hidden;
+    }
+
+    .stat-card {
+        transition: transform 0.3s ease;
+        border: none;
+        border-radius: 12px;
+    }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+    .table thead th {
+        background-color: #f8fafc;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        color: #64748b;
+        border-top: none;
+        padding: 1rem;
+    }
+
+    .table tbody td {
+        padding: 1rem;
+        vertical-align: middle;
+        color: #334155;
+        font-size: 0.9rem;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .btn-view {
+        background-color: #eff6ff;
+        color: #6c2bd9;
+        border: none;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+
+        .btn-view:hover {
+            background-color: #6c2bd9;
+            color: white;
+        }
+
+    .badge-gender {
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+</style>
+
+<div class="container-fluid py-4">
+
+    <div class="d-flex justify-content-between align-items-end mb-4 fade-up">
+        <div>
+            <h2 class="fw-bold mb-1">Customer Directory</h2>
+            <p class="text-muted mb-0">Overview of all registered customers in the EMS ecosystem.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary btn-sm"><i class="bi bi-download me-2"></i>Export</button>
+            <button class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-2"></i>New Customer</button>
         </div>
     </div>
+
+    <div class="row g-3 mb-4 fade-up" style="animation-delay: 0.1s;">
+        <div class="col-md-4">
+            <div class="card stat-card bg-primary text-white p-3">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <p class="mb-0 opacity-75 small font-weight-bold">Total Customers</p>
+                        <h3 class="mb-0 fw-bold">@(Model?.Pagination?.TotalItems ?? Model?.Data?.Count ?? 0)</h3>
+                    </div>
+                    <i class="bi bi-people fs-1 opacity-25"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stat-card shadow-sm p-3">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <p class="mb-0 text-muted small">New This Month</p>
+                        <h3 class="mb-0 fw-bold">12</h3>
+                    </div>
+                    <i class="bi bi-graph-up-arrow fs-1 text-success opacity-50"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stat-card shadow-sm p-3">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <p class="mb-0 text-muted small">Active Sessions</p>
+                        <h3 class="mb-0 fw-bold">Active</h3>
+                    </div>
+                    <i class="bi bi-cpu fs-1 text-info opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="glass-card fade-up" style="animation-delay: 0.2s;">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4">#</th>
+                        <th>Customer Name</th>
+                        <th>Gender</th>
+                        <th>Phone Number</th>
+                        <th>Date Created</th>
+                        <th class="text-end pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model?.Data != null && Model.Data.Any())
+                    {
+                        var count = (((Model?.Pagination?.PageNumber ?? 1) - 1) * (Model?.Pagination?.PageSize ?? 10)) + 1;
+                        foreach (var item in Model.Data)
+                        {
+                            <tr class="stagger-row" style="animation-delay: @(0.1 + (count * 0.05))s">
+                                <td class="ps-4 text-muted">@count.ToString("D2")</td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-sm me-3 bg-light rounded-circle d-flex align-items-center justify-content-center" style="width:35px; height:35px;">
+                                            <span class="text-primary fw-bold" style="font-size: 0.8rem;">@item.FullName.Substring(0, 1)</span>
+                                        </div>
+                                        <div>
+                                            <span class="d-block fw-semibold">@item.FullName</span>
+                                            <span class="text-muted small">@item.Address</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge badge-gender @(item.Gender == EMS.Models.Enums.Gender.Male ? "bg-primary-subtle text-primary" : "bg-danger-subtle text-danger")">
+                                        @item.Gender
+                                    </span>
+                                </td>
+                                <td><i class="bi bi-telephone text-muted me-2"></i>@item.PhoneNumber</td>
+                                <td>@item.DateCreated.ToString("MMM dd, yyyy")</td>
+                                <td class="text-end pe-4">
+                                    <a asp-action="GetCustomerById" asp-Controller="Customer" asp-route-id="@item.Id" class="btn btn-sm btn-view">
+                                        <i class="bi bi-eye me-1"></i> Details
+                                    </a>
+                                </td>
+                            </tr>
+                            count++;
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="6" class="py-5 text-center">
+                                <img src="https://cdn-icons-png.flaticon.com/512/7486/7486744.png" width="60" class="opacity-25 mb-3" />
+                                <p class="text-muted">No customer records found in the database.</p>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="mt-4 fade-up" style="animation-delay: 0.4s;">
+        <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%); border-radius: 12px;">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="me-4 bg-white rounded-circle shadow-sm d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                    <i class="bi bi-magic text-primary fs-4"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold mb-1">Advanced Analytics Coming Soon</h6>
+                    <p class="text-muted small mb-0">We are building custom reporting tools and customer behavior tracking for your dashboard.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (Model?.Pagination != null && Model.Pagination.TotalPages > 1)
+    {
+        <nav aria-label="Customer pagination" class="mt-4">
+            <ul class="pagination justify-content-center">
+                <li class="page-item @(Model.Pagination.HasPreviousPage ? "" : "disabled")">
+                    <a class="page-link"
+                       asp-action="GetAllCustomer"
+                       asp-controller="Customer"
+                       asp-route-pageNumber="@(Model.Pagination.PageNumber - 1)"
+                       asp-route-pageSize="@Model.Pagination.PageSize">Previous</a>
+                </li>
+                @for (var pageIndex = 1; pageIndex <= Model.Pagination.TotalPages; pageIndex++)
+                {
+                    <li class="page-item @(pageIndex == Model.Pagination.PageNumber ? "active" : "")">
+                        <a class="page-link"
+                           asp-action="GetAllCustomer"
+                           asp-controller="Customer"
+                           asp-route-pageNumber="@pageIndex"
+                           asp-route-pageSize="@Model.Pagination.PageSize">@pageIndex</a>
+                    </li>
+                }
+                <li class="page-item @(Model.Pagination.HasNextPage ? "" : "disabled")">
+                    <a class="page-link"
+                       asp-action="GetAllCustomer"
+                       asp-controller="Customer"
+                       asp-route-pageNumber="@(Model.Pagination.PageNumber + 1)"
+                       asp-route-pageSize="@Model.Pagination.PageSize">Next</a>
+                </li>
+            </ul>
+        </nav>
+    }
 </div>

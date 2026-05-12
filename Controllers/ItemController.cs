@@ -1,82 +1,80 @@
-﻿using EMS.Implementation.Services;
 using EMS.Interfaces.Services;
 using EMS.Models.DTOs.Items;
+using EMS.Models.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EMS.Controllers
 {
-    public class ItemController(IItemService itemService, ILogger<ItemService> logger) : Controller
+    public class ItemController(IItemService itemService, ILogger<ItemController> logger) : Controller
     {
-        private readonly ILogger<ItemService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        private readonly ILogger<ItemController> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         private readonly IItemService _itemService = itemService ?? throw new ArgumentNullException(nameof(itemService));
 
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Index()
+        [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
+        public async Task<IActionResult> Index(int pageNumber = 1, int pageSize = 10)
         {
-            var items = await _itemService.GetItemAsync(CancellationToken.None);
+            var items = await _itemService.GetItemAsync(CancellationToken.None, pageNumber, pageSize);
             return View(items);
         }
+
         [HttpGet]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
         public IActionResult Create()
         {
             return View();
         }
+
         [HttpPost]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(CreateItemRequestModel model)
         {
             if (!ModelState.IsValid)
             {
-                return View(model);   
+                return View(model);
             }
+
             var item = await _itemService.CreateAsync(model);
             if (!item.Status)
             {
-                ViewBag.Failed = "item creation unsuccessful";
+                ModelState.AddModelError(string.Empty, item.Message ?? "Item creation unsuccessful");
+                return View(model);
             }
-            ViewBag.Success = "item created successfully";
 
-            return RedirectToAction("Index","Item");
+            TempData["Success"] = "Item created successfully";
+            return RedirectToAction("Index", "Item");
         }
+
         [HttpGet]
-        [Authorize(Roles = "Admin")]
-        public  async Task<IActionResult> Delete([FromRoute]Guid id)
+        [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
+        public async Task<IActionResult> Delete([FromRoute] Guid id)
         {
-            
             var item = await _itemService.GetByIdAsync(id, CancellationToken.None);
             if (item == null)
             {
-                _logger.LogError($"Id Not Found {id}");
+                _logger.LogError("Id Not Found {Id}", id);
                 return NotFound();
             }
             return View(item);
         }
-        [HttpPost,ActionName("Delete")]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> DeleteConfirmed([FromRoute]Guid id)
+
+        [HttpPost, ActionName("Delete")]
+        [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed([FromRoute] Guid id)
         {
-            var item = await _itemService.DeleteAsync(id,CancellationToken.None);
+            var item = await _itemService.DeleteAsync(id, CancellationToken.None);
             if (item == null)
             {
                 return NotFound();
             }
             return RedirectToAction("Index", "Item");
+        }
 
-        }
         [HttpGet]
+        [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
         public async Task<IActionResult> GetItemById(Guid id)
-        {
-            var item = await _itemService.GetByIdAsync(id, CancellationToken.None);
-            if(item == null || item.Data == null)
-            {
-                return NotFound();
-            }
-            return View(item);
-        }
-        [HttpGet]
-        public async Task<IActionResult> Update(Guid id)
         {
             var item = await _itemService.GetByIdAsync(id, CancellationToken.None);
             if (item == null || item.Data == null)
@@ -86,27 +84,61 @@ namespace EMS.Controllers
             return View(item);
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Update(Guid id, UpdateItemRequestModel model)
+        [HttpGet]
+        [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
+        public async Task<IActionResult> Update(Guid id)
         {
-            // Make sure the incoming form bound model is valid
-            if (!ModelState.IsValid)
+            var item = await _itemService.GetByIdAsync(id, CancellationToken.None);
+            if (item == null || item.Data == null)
             {
-                var itemResp = await _itemService.GetByIdAsync(id, CancellationToken.None);
-                return View(itemResp);
+                return NotFound();
             }
 
-            var updateItem = await _itemService.UpdateAsync(id, model);
-            if (updateItem == null || !updateItem.Status)
+            return View(new UpdateItemViewModel
             {
-                // show the error and return the form with the current entity data
-                ModelState.AddModelError(string.Empty, updateItem?.Message ?? "Update failed");
-                var itemResp = await _itemService.GetByIdAsync(id, CancellationToken.None);
-                return View(itemResp);
-            }
-
-            return RedirectToAction("Index","Item");
+                Id = item.Data.Id,
+                Name = item.Data.Name,
+                Brand = item.Data.Brand,
+                Price = item.Data.Price,
+                QuantityInStock = item.Data.QuantityInStock,
+                CurrentImagePath = item.Data.ImagePath
+            });
         }
 
+        [HttpPost]
+        [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Update(UpdateItemViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            var updateRequest = new UpdateItemRequestModel
+            {
+                Name = model.Name,
+                Brand = model.Brand,
+                Price = model.Price,
+                QuantityInStock = model.QuantityInStock,
+                Image = model.Image
+            };
+
+            var updateItem = await _itemService.UpdateAsync(model.Id, updateRequest);
+            if (updateItem == null || !updateItem.Status)
+            {
+                ModelState.AddModelError(string.Empty, updateItem?.Message ?? "Update failed");
+                if (string.IsNullOrWhiteSpace(model.CurrentImagePath))
+                {
+                    var itemResp = await _itemService.GetByIdAsync(model.Id, CancellationToken.None);
+                    model.CurrentImagePath = itemResp?.Data?.ImagePath;
+                }
+
+                return View(model);
+            }
+
+            TempData["Success"] = "Item updated successfully";
+            return RedirectToAction("Index", "Item");
+        }
     }
 }

@@ -15,5 +15,7 @@
 
         public T Data { get; set; }
 
+        public PaginationMetadata? Pagination { get; set; }
+
     }
 }

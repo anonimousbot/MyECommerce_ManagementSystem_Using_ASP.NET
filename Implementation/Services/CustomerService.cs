@@ -8,6 +8,7 @@ using EMS.Models.DTOs.Customers;
 using EMS.Models.DTOs.Users;
 using EMS.Models.Entities;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace EMS.Implementation.Services
@@ -241,26 +242,31 @@ namespace EMS.Implementation.Services
             };
         }
 
-        public async Task<BaseResponse<IReadOnlyList<CustomerDto>>> GetCustomerAsync(CancellationToken cancellationToken)
+        public async Task<BaseResponse<CustomerDto>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken)
         {
-            var customers = await _customer_repository.GetAll<Customer>();
-            if (!customers.Any())
+            var customer = await _customer_repository.Get<Customer>(c => c.UserId == userId);
+            if (customer == null)
             {
-                _logger.LogError("No data found");
-                return new BaseResponse<IReadOnlyList<CustomerDto>>()
+                _logger.LogError("Customer doesn't exist for user {UserId}", userId);
+                return new BaseResponse<CustomerDto>
                 {
-                    Message = "No data found",
+                    Message = "Customer doesn't exist",
                     Status = false
                 };
             }
-            return new BaseResponse<IReadOnlyList<CustomerDto>>
-            {
-                Message = "Data Fetched Succcessfully",
-                Status = true,
-                Data = customers.Select(c => new CustomerDto
+
+            return await GetByIdAsync(customer.Id, cancellationToken);
+        }
+
+        public async Task<BaseResponse<IReadOnlyList<CustomerDto>>> GetCustomerAsync(CancellationToken cancellationToken, int pageNumber = 1, int pageSize = 10)
+        {
+            var (normalizedPageNumber, normalizedPageSize) = PaginationHelper.Normalize(pageNumber, pageSize);
+            var query = _customer_repository.Query<Customer>().AsNoTracking();
+            var totalItems = await query.CountAsync(cancellationToken);
+            var pagedCustomers = await query
+                .OrderByDescending(c => c.DateCreated)
+                .Select(c => new CustomerDto
                 {
-                    //FirstName = c.FirstName,
-                    //LastName = c.LastName,
                     Id = c.Id,
                     Address = c.Address,
                     Gender = c.Gender,
@@ -268,9 +274,30 @@ namespace EMS.Implementation.Services
                     DateModified = c.DateModified,
                     DateCreated = c.DateCreated,
                     DateOfBirth = c.DateOfBirth,
-                    FullName = c.FullName()
+                    FullName = (c.FirstName ?? string.Empty) + " " + (c.LastName ?? string.Empty)
+                })
+                .Skip((normalizedPageNumber - 1) * normalizedPageSize)
+                .Take(normalizedPageSize)
+                .ToListAsync(cancellationToken);
 
-                }).ToList()
+            if (totalItems == 0)
+            {
+                _logger.LogError("No data found");
+                return new BaseResponse<IReadOnlyList<CustomerDto>>()
+                {
+                    Message = "No data found",
+                    Status = false,
+                    Data = [],
+                    Pagination = PaginationHelper.Create(normalizedPageNumber, normalizedPageSize, totalItems)
+                };
+            }
+
+            return new BaseResponse<IReadOnlyList<CustomerDto>>
+            {
+                Message = "Data Fetched Succcessfully",
+                Status = true,
+                Data = pagedCustomers,
+                Pagination = PaginationHelper.Create(normalizedPageNumber, normalizedPageSize, totalItems)
             };
         }
 
@@ -278,10 +305,12 @@ namespace EMS.Implementation.Services
         {
             try
             {
-                var existingUser = await _userRepository.Get<User>(u => u.GoogleId == googleUser.GoogleId);
+                var existingUser = await _userRepository.GetUserByGoogleId(googleUser.GoogleId);
                 if (existingUser != null)
                 {
                     var roles = await _userManager.GetRolesAsync(existingUser);
+                    roles = await EnsureUserHasRoleAsync(existingUser, roles);
+                    var (firstName, fullName) = ResolveNames(existingUser, googleUser.FullName);
                     _logger.LogInformation("Google user logged in succesfully");
                     return new BaseResponse<LoginResponseModel>
                     {
@@ -292,8 +321,8 @@ namespace EMS.Implementation.Services
                             UserId = existingUser.Id,
                             Email = existingUser.Email,
                             Roles = roles.Select(r => new Models.DTOs.Roles.RoleDto { Name = r }).ToList(),
-                            FirstName = existingUser.Customer?.FirstName?? string.Empty,
-                            FullName = existingUser.Customer?.FullName() ?? string.Empty,
+                            FirstName = firstName,
+                            FullName = fullName,
                         }
                     };
                 }
@@ -303,6 +332,8 @@ namespace EMS.Implementation.Services
                     userByEmail.GoogleId = googleUser.GoogleId;
                     await _unitOfWork.SaveChangesAsync(cancellationToken);
                     var roles = await _userManager.GetRolesAsync(userByEmail);
+                    roles = await EnsureUserHasRoleAsync(userByEmail, roles);
+                    var (firstName, fullName) = ResolveNames(userByEmail, googleUser.FullName);
                     _logger.LogInformation("Google Account Linked To Existing User");
                     return new BaseResponse<LoginResponseModel>
                     {
@@ -313,8 +344,8 @@ namespace EMS.Implementation.Services
                             UserId = userByEmail.Id,
                             Email = userByEmail.Email,
                             Roles = roles.Select(r => new Models.DTOs.Roles.RoleDto { Name = r }).ToList(),
-                            FirstName = userByEmail.Customer?.FirstName ?? string.Empty,
-                            FullName = userByEmail.Customer?.FullName() ?? string.Empty
+                            FirstName = firstName,
+                            FullName = fullName
                         }
                     };
                 }
@@ -420,6 +451,50 @@ namespace EMS.Implementation.Services
                     Status = false,
                 };
             }
+        }
+
+        private async Task<IList<string>> EnsureUserHasRoleAsync(User user, IList<string> roles)
+        {
+            if (roles.Count > 0)
+            {
+                return roles;
+            }
+
+            var fallbackRole = user.Admin != null ? "Admin" : user.Customer != null ? "Customer" : null;
+            if (fallbackRole == null)
+            {
+                return roles;
+            }
+
+            var addRoleResult = await _userManager.AddToRoleAsync(user, fallbackRole);
+            if (!addRoleResult.Succeeded)
+            {
+                var errors = string.Join(" | ", addRoleResult.Errors.Select(e => e.Description));
+                _logger.LogError("Failed to assign fallback role {Role} for Google login user {UserId}: {Errors}", fallbackRole, user.Id, errors);
+                return roles;
+            }
+
+            return await _userManager.GetRolesAsync(user);
+        }
+
+        private static (string firstName, string fullName) ResolveNames(User user, string? fallbackFullName)
+        {
+            if (user.Customer != null)
+            {
+                return (user.Customer.FirstName ?? string.Empty, user.Customer.FullName() ?? string.Empty);
+            }
+
+            if (user.Admin != null)
+            {
+                return (user.Admin.FirstName ?? string.Empty, user.Admin.FullName() ?? string.Empty);
+            }
+
+            var name = fallbackFullName ?? string.Empty;
+            var first = string.IsNullOrWhiteSpace(name)
+                ? "User"
+                : name.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "User";
+
+            return (first, name);
         }
 
         public async Task<BaseResponse<bool>> CreateCustomerByGmail(Customer createCustomer)

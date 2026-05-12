@@ -1,455 +1,392 @@
-﻿@using EMS.Models.DTOs
-
+@using EMS.Models.DTOs
 @model BaseResponse<EMS.Models.DTOs.Users.UserDto>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@User.FindFirst(System.Security.Claims.ClaimTypes.GivenName).Value</title>
+@{
+    ViewData["Title"] = "My Profile";
+    var user = Model?.Data;
+    var customer = user?.Customer;
+    var displayName = customer?.FullName;
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    if (string.IsNullOrWhiteSpace(displayName))
+    {
+        displayName = customer == null
+            ? "Customer"
+            : string.Join(" ", new[] { customer.FirstName, customer.LastName }.Where(x => !string.IsNullOrWhiteSpace(x))).Trim();
+    }
 
-    <style>
-        :root {
-            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    if (string.IsNullOrWhiteSpace(displayName))
+    {
+        displayName = user?.Email ?? "Customer";
+    }
+
+    var initials = string.Join("", displayName
+        .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+        .Take(2)
+        .Select(part => char.ToUpperInvariant(part[0])));
+
+    if (string.IsNullOrWhiteSpace(initials))
+    {
+        initials = "C";
+    }
+}
+
+<style>
+    .profile-shell {
+        display: grid;
+        gap: 1.5rem;
+    }
+
+    .profile-hero {
+        position: relative;
+        overflow: hidden;
+        border-radius: 30px;
+        padding: 2rem;
+        background: linear-gradient(135deg, #1e0744 0%, #5521b5 42%, #7c3aed 100%);
+        color: #fff;
+        box-shadow: 0 26px 56px rgba(108, 43, 217, 0.22);
+    }
+
+    .profile-hero::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+            radial-gradient(circle at top right, rgba(255,255,255,0.16), transparent 28%),
+            radial-gradient(circle at bottom left, rgba(255,255,255,0.12), transparent 24%);
+        pointer-events: none;
+    }
+
+    .profile-hero > * {
+        position: relative;
+        z-index: 1;
+    }
+
+    .profile-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.25rem;
+        flex-wrap: wrap;
+    }
+
+    .profile-identity {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        min-width: 0;
+    }
+
+    .profile-avatar {
+        width: 88px;
+        height: 88px;
+        border-radius: 24px;
+        background: rgba(255,255,255,0.14);
+        border: 1px solid rgba(255,255,255,0.24);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8rem;
+        font-weight: 900;
+        letter-spacing: -0.05em;
+        box-shadow: 0 18px 36px rgba(15,23,42,0.18);
+        backdrop-filter: blur(10px);
+        flex-shrink: 0;
+    }
+
+    .profile-name {
+        margin: 0;
+        font-size: clamp(1.8rem, 3vw, 2.4rem);
+        font-weight: 900;
+        letter-spacing: -0.05em;
+    }
+
+    .profile-copy {
+        margin: 0.45rem 0 0;
+        color: rgba(255,255,255,0.78);
+        max-width: 58ch;
+        line-height: 1.7;
+    }
+
+    .profile-role-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.55rem;
+        margin-top: 1rem;
+    }
+
+    .profile-role {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.48rem 0.78rem;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.14);
+        border: 1px solid rgba(255,255,255,0.18);
+        color: #fff;
+        font-size: 0.8rem;
+        font-weight: 800;
+    }
+
+    .profile-actions {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .profile-actions .btn {
+        min-width: 150px;
+    }
+
+    .profile-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1.25rem;
+    }
+
+    .profile-card {
+        background: rgba(255,255,255,0.95);
+        border: 1px solid rgba(15,23,42,0.08);
+        border-radius: 24px;
+        box-shadow: 0 18px 40px rgba(15,23,42,0.08);
+        padding: 1.5rem;
+    }
+
+    .profile-card-title {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        margin: 0 0 1.3rem;
+        color: #0f172a;
+        font-size: 1.12rem;
+        font-weight: 900;
+        letter-spacing: -0.03em;
+    }
+
+    .profile-card-title i {
+        color: #6c2bd9;
+    }
+
+    .profile-field {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.9rem;
+        padding: 0.95rem 0;
+        border-top: 1px solid rgba(15,23,42,0.06);
+    }
+
+    .profile-field:first-of-type {
+        border-top: 0;
+        padding-top: 0;
+    }
+
+    .profile-field-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(108,43,217,0.1);
+        color: #6c2bd9;
+        flex-shrink: 0;
+    }
+
+    .profile-field-label {
+        margin: 0 0 0.2rem;
+        color: #64748b;
+        font-size: 0.74rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .profile-field-value {
+        margin: 0;
+        color: #0f172a;
+        font-size: 1rem;
+        font-weight: 700;
+        line-height: 1.55;
+        word-break: break-word;
+    }
+
+    .profile-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.5rem 0.85rem;
+        border-radius: 999px;
+        background: rgba(22,163,74,0.1);
+        color: #15803d;
+        font-size: 0.84rem;
+        font-weight: 800;
+    }
+
+    .profile-empty {
+        text-align: center;
+        padding: 3rem 1.5rem;
+    }
+
+    @@media (max-width: 991px) {
+        .profile-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 640px) {
+        .profile-hero {
+            padding: 1.35rem;
         }
 
-        body {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            min-height: 100vh;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        .profile-identity {
+            align-items: flex-start;
         }
 
-        .profile-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem 1rem;
-        }
-
-        .profile-header {
-            background: white;
+        .profile-avatar {
+            width: 72px;
+            height: 72px;
             border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-            margin-bottom: 2rem;
-        }
-
-        .profile-banner {
-            background: var(--primary-gradient);
-            padding: 3rem 2rem 2rem;
-            position: relative;
-            overflow: hidden;
-        }
-
-            .profile-banner::before {
-                content: '';
-                position: absolute;
-                top: -50%;
-                right: -20%;
-                width: 400px;
-                height: 400px;
-                background: rgba(255, 255, 255, 0.1);
-                border-radius: 50%;
-            }
-
-            .profile-banner::after {
-                content: '';
-                position: absolute;
-                bottom: -30%;
-                left: -10%;
-                width: 300px;
-                height: 300px;
-                background: rgba(255, 255, 255, 0.1);
-                border-radius: 50%;
-            }
-
-        .avatar-container {
-            position: relative;
-            z-index: 2;
-        }
-
-        .avatar-large {
-            width: 140px;
-            height: 140px;
-            background: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 3.5rem;
-            font-weight: bold;
-            background: var(--secondary-gradient);
-            color: white;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            border: 5px solid white;
-        }
-
-        .profile-info {
-            position: relative;
-            z-index: 2;
-        }
-
-        .role-section {
-            background: linear-gradient(to right, #f8f9fa, #ffffff);
-            padding: 1.5rem 2rem;
-            border-bottom: 1px solid #e9ecef;
-        }
-
-        .role-badge {
-            background: var(--primary-gradient);
-            color: white;
-            padding: 0.5rem 1.5rem;
-            border-radius: 50px;
-            font-weight: 600;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-        }
-
-        .info-card {
-            background: white;
-            border-radius: 20px;
-            padding: 2rem;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
-            height: 100%;
-        }
-
-            .info-card:hover {
-                transform: translateY(-10px);
-                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-            }
-
-        .info-card-title {
             font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 2rem;
-            padding-bottom: 1rem;
-            border-bottom: 3px solid;
-            border-image: var(--primary-gradient) 1;
         }
 
-        .info-item {
-            margin-bottom: 2rem;
-            display: flex;
-            align-items: start;
-        }
-
-        .info-icon {
-            width: 55px;
-            height: 55px;
-            background: var(--primary-gradient);
-            border-radius: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 1.5rem;
-            flex-shrink: 0;
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3);
-        }
-
-        .info-content {
-            margin-left: 1.5rem;
-            flex-grow: 1;
-        }
-
-        .info-label {
-            font-size: 0.85rem;
-            color: #6c757d;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 0.3rem;
-        }
-
-        .info-value {
-            font-size: 1.1rem;
-            color: #2d3748;
-            font-weight: 500;
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-            margin-top: 2rem;
-        }
-
-        .btn-gradient {
-            background: var(--primary-gradient);
-            border: none;
-            color: white;
-            padding: 1rem 3rem;
-            font-size: 1.1rem;
-            font-weight: 600;
-            border-radius: 50px;
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
-            transition: all 0.3s ease;
-        }
-
-            .btn-gradient:hover {
-                transform: translateY(-3px);
-                box-shadow: 0 15px 40px rgba(102, 126, 234, 0.5);
-                color: white;
-            }
-
-        .btn-outline-custom {
-            border: 2px solid #667eea;
-            color: #667eea;
-            padding: 1rem 3rem;
-            font-size: 1.1rem;
-            font-weight: 600;
-            border-radius: 50px;
-            background: white;
-            transition: all 0.3s ease;
-        }
-
-            .btn-outline-custom:hover {
-                background: var(--primary-gradient);
-                color: white;
-                transform: translateY(-3px);
-                box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
-            }
-
-        .btn-danger-custom {
-            border: 2px solid #dc3545;
-            color: #dc3545;
-            padding: 1rem 3rem;
-            font-size: 1.1rem;
-            font-weight: 600;
-            border-radius: 50px;
-            background: white;
-            transition: all 0.3s ease;
-        }
-
-            .btn-danger-custom:hover {
-                background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-                color: white;
-                border-color: #dc3545;
-                transform: translateY(-3px);
-                box-shadow: 0 15px 40px rgba(220, 53, 69, 0.4);
-            }
-
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 0.5rem 1.5rem;
-            border-radius: 50px;
-            font-weight: 600;
-            font-size: 0.95rem;
-        }
-
-        .status-active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-        }
-
-        .delete-icon-wrapper {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, #fff5f5 0%, #ffe0e0 100%);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto;
-        }
-
-            .delete-icon-wrapper i {
-                font-size: 2.5rem;
-                color: #dc3545;
-            }
-
-        .modal-content {
-            border-radius: 20px;
-        }
-
-        .btn-danger-confirm {
-            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-            border: none;
-            color: white;
-            padding: 1rem;
-            font-size: 1rem;
-            font-weight: 600;
-            border-radius: 50px;
-            transition: all 0.3s ease;
-        }
-
-            .btn-danger-confirm:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 10px 30px rgba(220, 53, 69, 0.4);
-            }
-
-        .btn-secondary-custom {
-            background: #f8f9fa;
-            border: 2px solid #dee2e6;
-            color: #6c757d;
-            padding: 1rem;
-            font-size: 1rem;
-            font-weight: 600;
-            border-radius: 50px;
-            transition: all 0.3s ease;
-        }
-
-            .btn-secondary-custom:hover {
-                background: #e9ecef;
-                border-color: #adb5bd;
-                color: #495057;
-            }
-
-        @@media (max-width: 768px) {
-            .profile-banner
-
-        {
-            padding: 2rem 1rem;
-        }
-
-        .avatar-large {
-            width: 100px;
-            height: 100px;
-            font-size: 2.5rem;
-        }
-
-        .action-buttons {
-            flex-direction: column;
-        }
-
-        .btn-gradient, .btn-outline-custom, .btn-danger-custom {
+        .profile-actions {
             width: 100%;
         }
 
-        }</style>
-</head>
+        .profile-actions .btn {
+            width: 100%;
+        }
+    }
+</style>
 
-<body>
-    <div class="profile-container">
-        <div class="profile-header">
-            <div class="profile-banner">
-                <div class="row align-items-center">
-                    <div class="col-auto avatar-container">
-                        <div class="avatar-large">
-                            @User.FindFirst(System.Security.Claims.ClaimTypes.GivenName).Value
+@if (user == null || customer == null)
+{
+    <div class="empty-state-card profile-empty">
+        <div class="empty-state-icon"><i class="bi bi-person-x"></i></div>
+        <h2 class="page-title" style="font-size:1.45rem;">Profile not available</h2>
+        <p class="page-subtitle">We could not load your profile details right now. Please try again from your dashboard.</p>
+        <a asp-action="Index" asp-controller="Customer" class="btn btn-primary mt-3">
+            <i class="bi bi-arrow-left me-2"></i>Back to dashboard
+        </a>
+    </div>
+}
+else
+{
+    <div class="profile-shell">
+        <section class="profile-hero">
+            <div class="profile-top">
+                <div>
+                    <div class="profile-identity">
+                        <div class="profile-avatar">@initials</div>
+                        <div>
+                            <h1 class="profile-name">@displayName</h1>
+                            <p class="profile-copy">Keep your contact details current so checkout, delivery, and account activity stay accurate across your T-Socket experience.</p>
                         </div>
                     </div>
 
-                    <div class="col profile-info">
-                        <h1 class="display-4 fw-bold text-white mb-2">@Model.Data.Customer.FullName</h1>
-                    </div>
-                </div>
-            </div>
-
-            <div class="role-section">
-                <div class="d-flex align-items-center flex-wrap gap-3">
-                    <div class="d-flex align-items-center">
-                        <i class="bi bi-shield-check text-primary me-2 fs-5"></i>
-                        <span class="fw-bold text-dark">Roles:</span>
-                    </div>
-
-                    @foreach (var r in Model.Data.Roles)
+                    @if (user.Roles != null && user.Roles.Any())
                     {
-                        <span class="role-badge">@r.Name</span>
+                        <div class="profile-role-list">
+                            @foreach (var role in user.Roles)
+                            {
+                                <span class="profile-role">
+                                    <i class="bi bi-shield-check"></i>@role.Name
+                                </span>
+                            }
+                        </div>
                     }
                 </div>
-            </div>
-        </div>
 
-
-        <!-- Contact + Personal Information -->
-        <div class="row g-4 mb-4">
-
-            <!-- Contact -->
-            <div class="col-lg-6">
-                <div class="info-card">
-                    <h3 class="info-card-title">
-                        <i class="bi bi-telephone-fill text-primary me-2"></i>
-                        Contact Information
-                    </h3>
-
-                    <div class="info-item">
-                        <div class="info-icon"><i class="bi bi-envelope-fill"></i></div>
-                        <div class="info-content">
-                            <div class="info-label">Email Address</div>
-                            <div class="info-value">@Model.Data.Email</div>
-                        </div>
-                    </div>
-
-                    <div class="info-item">
-                        <div class="info-icon"><i class="bi bi-phone-fill"></i></div>
-                        <div class="info-content">
-                            <div class="info-label">Phone Number</div>
-                            <div class="info-value">@Model.Data.Customer.PhoneNumber</div>
-                        </div>
-                    </div>
-
-                    <div class="info-item mb-0">
-                        <div class="info-icon"><i class="bi bi-geo-alt-fill"></i></div>
-                        <div class="info-content">
-                            <div class="info-label">Address</div>
-                            <div class="info-value">@Model.Data.Customer.Address</div>
-                        </div>
-                    </div>
+                <div class="profile-actions">
+                    <a class="btn btn-light" asp-action="Index" asp-controller="Customer">
+                        <i class="bi bi-arrow-left me-2"></i>Back to shop
+                    </a>
+                    <a class="btn btn-primary"
+                       asp-action="Update"
+                       asp-route-id="@customer.Id"
+                       asp-controller="Customer">
+                        <i class="bi bi-pencil-square me-2"></i>Edit profile
+                    </a>
+                    <a class="btn btn-outline-danger"
+                       asp-action="Delete"
+                       asp-route-id="@customer.Id"
+                       asp-controller="Customer"
+                       onclick="return confirm('Are you sure you want to remove this account? This action cannot be undone.');">
+                        <i class="bi bi-trash3 me-2"></i>Delete account
+                    </a>
                 </div>
             </div>
+        </section>
 
+        <div class="profile-grid">
+            <section class="profile-card">
+                <h2 class="profile-card-title"><i class="bi bi-telephone-fill"></i>Contact Information</h2>
 
-            <!-- Personal -->
-            <div class="col-lg-6">
-                <div class="info-card">
-                    <h3 class="info-card-title">
-                        <i class="bi bi-person-fill text-primary me-2"></i>
-                        Personal Information
-                    </h3>
-
-                    <div class="info-item">
-                        <div class="info-icon"><i class="bi bi-person-badge-fill"></i></div>
-                        <div class="info-content">
-                            <div class="info-label">Full Name</div>
-                            <div class="info-value"> @Model.Data.Customer.FullName</div>
-                        </div>
-                    </div>
-
-                    <div class="info-item">
-                        <div class="info-icon"><i class="bi bi-gender-ambiguous"></i></div>
-                        <div class="info-content">
-                            <div class="info-label">Gender</div>
-                            <div class="info-value">@Model.Data.Customer.Gender</div>
-                        </div>
-                    </div>
-
-                    <div class="info-item mb-0">
-                        <div class="info-icon"><i class="bi bi-calendar-event-fill"></i></div>
-                        <div class="info-content">
-                            <div class="info-label">Date of Birth</div>
-                            <div class="info-value">@Model.Data.Customer.DateOfBirth?.ToShortDateString()</div>
-                        </div>
+                <div class="profile-field">
+                    <div class="profile-field-icon"><i class="bi bi-envelope-fill"></i></div>
+                    <div>
+                        <p class="profile-field-label">Email Address</p>
+                        <p class="profile-field-value">@user.Email</p>
                     </div>
                 </div>
-            </div>
 
+                <div class="profile-field">
+                    <div class="profile-field-icon"><i class="bi bi-phone-fill"></i></div>
+                    <div>
+                        <p class="profile-field-label">Phone Number</p>
+                        <p class="profile-field-value">@(string.IsNullOrWhiteSpace(customer.PhoneNumber) ? "Not provided" : customer.PhoneNumber)</p>
+                    </div>
+                </div>
+
+                <div class="profile-field">
+                    <div class="profile-field-icon"><i class="bi bi-geo-alt-fill"></i></div>
+                    <div>
+                        <p class="profile-field-label">Address</p>
+                        <p class="profile-field-value">@(string.IsNullOrWhiteSpace(customer.Address) ? "Not provided" : customer.Address)</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="profile-card">
+                <h2 class="profile-card-title"><i class="bi bi-person-badge-fill"></i>Personal Information</h2>
+
+                <div class="profile-field">
+                    <div class="profile-field-icon"><i class="bi bi-person-fill"></i></div>
+                    <div>
+                        <p class="profile-field-label">Full Name</p>
+                        <p class="profile-field-value">@displayName</p>
+                    </div>
+                </div>
+
+                <div class="profile-field">
+                    <div class="profile-field-icon"><i class="bi bi-gender-ambiguous"></i></div>
+                    <div>
+                        <p class="profile-field-label">Gender</p>
+                        <p class="profile-field-value">@(customer.Gender?.ToString() ?? "Not provided")</p>
+                    </div>
+                </div>
+
+                <div class="profile-field">
+                    <div class="profile-field-icon"><i class="bi bi-calendar-event-fill"></i></div>
+                    <div>
+                        <p class="profile-field-label">Date of Birth</p>
+                        <p class="profile-field-value">@(customer.DateOfBirth?.ToString("dd MMM yyyy") ?? "Not provided")</p>
+                    </div>
+                </div>
+            </section>
         </div>
 
+        <section class="profile-card">
+            <h2 class="profile-card-title"><i class="bi bi-gear-fill"></i>Account Details</h2>
 
-
-        <!-- Account Details -->
-        <div class="info-card">
-            <h3 class="info-card-title">
-                <i class="bi bi-gear-fill text-primary me-2"></i>
-                Account Details
-            </h3>
-            <div class="row">
+            <div class="row g-4">
                 <div class="col-md-4">
-                    <div class="info-item mb-md-0">
-                        <div class="info-icon"><i class="bi bi-check-circle-fill"></i></div>
-                        <div class="info-content">
-                            <div class="info-label">Account Status</div>
-                            <div class="info-value">
-                                <span class="status-badge status-active">
-                                    <i class="bi bi-circle-fill me-2" style="font-size: 0.5rem;"></i>
-                                    Active
+                    <div class="profile-field">
+                        <div class="profile-field-icon"><i class="bi bi-check-circle-fill"></i></div>
+                        <div>
+                            <p class="profile-field-label">Account Status</p>
+                            <div class="profile-field-value">
+                                <span class="profile-status">
+                                    <i class="bi bi-circle-fill" style="font-size:0.5rem;"></i>Active
                                 </span>
                             </div>
                         </div>
@@ -457,34 +394,25 @@
                 </div>
 
                 <div class="col-md-4">
-                    <div class="info-item mb-0">
-                        <div class="info-icon"><i class="bi bi-calendar-plus-fill"></i></div>
-                        <div class="info-content">
-                            <div class="info-label">Member Since</div>
-                            <div class="info-value">@Model.Data.Customer.DateCreated.ToShortDateString()</div>
+                    <div class="profile-field">
+                        <div class="profile-field-icon"><i class="bi bi-calendar-plus-fill"></i></div>
+                        <div>
+                            <p class="profile-field-label">Member Since</p>
+                            <p class="profile-field-value">@customer.DateCreated.ToString("dd MMM yyyy")</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="profile-field">
+                        <div class="profile-field-icon"><i class="bi bi-clock-history"></i></div>
+                        <div>
+                            <p class="profile-field-label">Last Updated</p>
+                            <p class="profile-field-value">@customer.DateModified.ToString("dd MMM yyyy")</p>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-
-
-        <!-- Buttons -->
-        <div class="action-buttons">
-            <a class="btn btn-danger-custom" asp-action="Delete" asp-route-id="@Model.Data.Customer.Id" asp-controller="Customer">
-                <i class="bi bi-delete-square me-2"></i>Delete
-            </a>
-            <a class="btn btn-primary-custom" asp-action="Update" asp-route-id="@Model.Data.Customer.Id" asp-controller="Customer">
-                <i class="bi bi-pencil-square me-2"></i>Update
-            </a>
-            <a class="btn btn-outline-custom" asp-action="Index">
-                <i class="bi bi-arrow-left me-2"></i>Back to List
-            </a>
-
-           
-        </div>
+        </section>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+}

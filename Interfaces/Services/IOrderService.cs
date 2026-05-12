@@ -8,8 +8,8 @@ namespace EMS.Interfaces.Services
     {
         Task<BaseResponse<bool>> CreateAsync(CreateOrderRequestModel model);
         Task<BaseResponse<bool>> UpdateAsync(Guid id,UpdateOrderRequestModel model);
-        Task<BaseResponse<IEnumerable<OrderDto>>> GetOrderAsync(CancellationToken cancellationToken);
-        Task<BaseResponse<IEnumerable<OrderDto>>> GetOrdersByCustomerAsync(Guid id,  CancellationToken cancellationToken);
+        Task<BaseResponse<IEnumerable<OrderDto>>> GetOrderAsync(CancellationToken cancellationToken, int pageNumber = 1, int pageSize = 10);
+        Task<BaseResponse<IEnumerable<OrderDto>>> GetOrdersByCustomerAsync(Guid id,  CancellationToken cancellationToken, int pageNumber = 1, int pageSize = 10);
         Task<BaseResponse<OrderDto>> GetOrderById(Guid id,CancellationToken cancellationtoken);
         Task<BaseResponse<IReadOnlyList<OrderDto>>> GetPendingOrderAsync(CancellationToken cancellationtoken);
         Task<BaseResponse<IReadOnlyList<OrderDto>>> GetProcessingOrderAsync(CancellationToken cancellationtoken);

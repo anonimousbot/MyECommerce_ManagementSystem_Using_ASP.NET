@@ -1,34 +1,47 @@
-﻿using EMS.Interfaces.Repositories;
+using EMS.Interfaces.Repositories;
 using EMS.Interfaces.Services;
 using EMS.Models.DTOs;
-using EMS.Models.DTOs.Customers;
-using EMS.Models.DTOs.Items;
 using EMS.Models.DTOs.Orders;
 using EMS.Models.Entities;
-using Microsoft.VisualBasic;
+using Microsoft.EntityFrameworkCore;
 
 namespace EMS.Implementation.Services
 {
-    public class OrderService(IOrderRepository orderRepository, ICustomerRepository customerRepository,
-            ILogger<OrderService> logger, IUnitOfWork unitOfWork, IItemRepository itemRepository) : IOrderService
+    public class OrderService(
+        IOrderRepository orderRepository,
+        ICustomerRepository customerRepository,
+        ILogger<OrderService> logger,
+        IUnitOfWork unitOfWork,
+        IItemRepository itemRepository) : IOrderService
     {
         private readonly IOrderRepository _orderRepository = orderRepository ?? throw new ArgumentNullException(nameof(orderRepository));
         private readonly IItemRepository _itemRepository = itemRepository ?? throw new ArgumentNullException(nameof(itemRepository));
         private readonly ICustomerRepository _customerRepository = customerRepository ?? throw new ArgumentNullException(nameof(customerRepository));
         private readonly ILogger<OrderService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+
         public async Task<BaseResponse<bool>> CreateAsync(CreateOrderRequestModel model)
         {
-            // Try to get customer by Customer.Id first (model.CustomerId may be a Customer.Id)
-            var getCustomer = await _customerRepository.Get<Customer>(i => i.Id == model.CustomerId);
-
-            // If not found, maybe model.CustomerId holds the User.Id (from the claim) — try UserId
-            if (getCustomer == null && model.CustomerId != Guid.Empty)
+            if (model.Quantity <= 0)
             {
-                getCustomer = await _customerRepository.Get<Customer>(c => c.UserId == model.CustomerId);
+                return new BaseResponse<bool>
+                {
+                    Message = "Quantity must be greater than zero.",
+                    Status = false
+                };
             }
 
-            if (getCustomer == null)
+            if (string.IsNullOrWhiteSpace(model.DeliveryAddress))
+            {
+                return new BaseResponse<bool>
+                {
+                    Message = "Delivery address is required.",
+                    Status = false
+                };
+            }
+
+            var customer = await ResolveCustomerAsync(model.CustomerId);
+            if (customer == null)
             {
                 _logger.LogError("Customer cannot be found");
                 return new BaseResponse<bool>
@@ -37,8 +50,9 @@ namespace EMS.Implementation.Services
                     Status = false
                 };
             }
-            var getItem = await _itemRepository.Get<Item>(i => i.Id == model.ItemId);
-            if (getItem == null)
+
+            var item = await _itemRepository.Get<Item>(i => i.Id == model.ItemId);
+            if (item == null)
             {
                 _logger.LogError("Item cannot be found");
                 return new BaseResponse<bool>
@@ -47,59 +61,75 @@ namespace EMS.Implementation.Services
                     Status = false
                 };
             }
-            if (getItem.QuantityInStock < model.Quantity)
-            {
-                _logger.LogError("Insufficient Stock");
-                return new BaseResponse<bool>
-                {
-                    Message = "Insufficient Stock",
-                    Status = false
-                };
-            }
-       
-            var unitPrice = getItem.Price;
-            var totalPrice = unitPrice + model.Quantity;
 
+            var unitPrice = item.Price;
+            var totalPrice = unitPrice * model.Quantity;
 
-            var order = new Order
+            await using var transaction = await _unitOfWork.BeginTransactionAsync();
+            try
             {
-                CustomerId = getCustomer.Id,
-                DateCreated = DateTime.UtcNow,
-                Amount = model.Amount,
-                DeliveryAddress = model.DeliveryAddress,
-                OrderStatus = Models.Enums.Status.Processing,
-                OrderItem = new List<OrderItem>
+                var okDecrement = await _itemRepository.TryDecrementStockAsync(item.Id, model.Quantity, CancellationToken.None);
+                if (!okDecrement)
                 {
-                    new OrderItem
+                    await transaction.RollbackAsync(CancellationToken.None);
+                    return new BaseResponse<bool>
                     {
-                        ItemId = model.ItemId,
-                        Quantity = model.Quantity,
-                        UnitPrice = model.Amount,
-                        TotalPrice = model.TotalAmount,
-                    }
+                        Message = "Insufficient Stock",
+                        Status = false
+                    };
                 }
-            };
-            getItem.QuantityInStock -= model.Quantity;
 
-            var newOrder = await _orderRepository.Add(order);
-            _itemRepository.Update(getItem);
-            await _unitOfWork.SaveChangesAsync(CancellationToken.None);
+                var order = new Order
+                {
+                    CustomerId = customer.Id,
+                    DateCreated = DateTime.UtcNow,
+                    Amount = totalPrice,
+                    DeliveryAddress = model.DeliveryAddress,
+                    OrderStatus = Models.Enums.Status.Processing,
+                    OrderItem = new List<OrderItem>
+                    {
+                        new()
+                        {
+                            ItemId = model.ItemId,
+                            Quantity = model.Quantity,
+                            UnitPrice = unitPrice,
+                            TotalPrice = totalPrice,
+                            DateCreated = DateTime.UtcNow
+                        }
+                    }
+                };
 
-            if (newOrder == null)
-            {
-                _logger.LogError("Order Couldn't be Initialized");
+                var newOrder = await _orderRepository.Add(order);
+                await _unitOfWork.SaveChangesAsync(CancellationToken.None);
+
+                if (newOrder == null)
+                {
+                    await transaction.RollbackAsync(CancellationToken.None);
+                    _logger.LogError("Order couldn't be initialized");
+                    return new BaseResponse<bool>
+                    {
+                        Message = "Order couldn't be initialized",
+                        Status = false
+                    };
+                }
+
+                await transaction.CommitAsync(CancellationToken.None);
                 return new BaseResponse<bool>
                 {
-                    Message = "Order Couldn't be Initialized",
+                    Message = "Order created successfully",
+                    Status = true
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error creating order");
+                await transaction.RollbackAsync(CancellationToken.None);
+                return new BaseResponse<bool>
+                {
+                    Message = "Order could not be created.",
                     Status = false
                 };
             }
-            return new BaseResponse<bool>
-            {
-                Message = "Order Created Succesfully",
-                Status = true
-            };
-
         }
 
         public async Task<BaseResponse<bool>> DeleteAsync(Guid orderId)
@@ -107,7 +137,7 @@ namespace EMS.Implementation.Services
             var order = await _orderRepository.GetOrderById(orderId);
             if (order == null)
             {
-                _logger.LogError($"Order not found.");
+                _logger.LogError("Order not found.");
                 return new BaseResponse<bool>
                 {
                     Message = "Order not found",
@@ -115,320 +145,157 @@ namespace EMS.Implementation.Services
                 };
             }
 
-            var orderItems = order.OrderItem;
-            if (orderItems != null)
+            if (order.OrderItem != null)
             {
-                foreach (var item in orderItems)
+                foreach (var item in order.OrderItem)
                 {
-                    var getItem = await _itemRepository.Get<Item>(i => i.Id == item.ItemId);
-
-                    if (getItem != null)
-                    {
-                        getItem.QuantityInStock += item.Quantity;
-                    }
-                    _logger.LogError("Item Not Found in order");
+                    await _itemRepository.IncrementStockAsync(item.ItemId, item.Quantity, CancellationToken.None);
                 }
             }
-            else if(orderItems == null)
-            {
-                _logger.LogError("Item Not Found in order");
-            }
-            //TRY TO ADD THE QUANTITY TO QUANTITY IN STOCK
-
-            //var getItem = await _itemRepository.Get<Item>(i => i.Id == Item);
-            //if (getItem == null)
-            //{
-            //    _logger.LogError("Item cannot be found");
-            //    return new BaseResponse<bool>
-            //    {
-            //        Message = "Item cannot be found",
-            //        Status = false
-            //    };
-            //}
-            //getItem.QuantityInStock += item.Quantity;
-
-
-
 
             _orderRepository.Delete(order);
             await _unitOfWork.SaveChangesAsync(CancellationToken.None);
+
             return new BaseResponse<bool>
             {
-                Message = "Order Deleted Successfully",
+                Message = "Order deleted successfully",
                 Status = true
-
             };
         }
 
-        public async Task<BaseResponse<IReadOnlyList<OrderDto>>> GetCancelledOrderAsync(CancellationToken cancellationtoken)
+        public async Task<BaseResponse<IEnumerable<OrderDto>>> GetOrderAsync(CancellationToken cancellationToken, int pageNumber = 1, int pageSize = 10)
         {
-            var order = await _orderRepository.GetCancelledOrderAsync();
-            if (!order.Any())
-            {
-                _logger.LogError("No Order found");
-                return new BaseResponse<IReadOnlyList<OrderDto>>
-                {
-                    Message = "No Order Found",
-                    Status = false
-                };
-            }
-            _logger.LogInformation("Data Fetched Successfully");
-            return new BaseResponse<IReadOnlyList<OrderDto>>
-            {
-                Message = "Data Fetched Successfully",
-                Status = true,
-                Data = order.Select(o => new OrderDto
-                {
-                    Id = o.Id,
-                    Amount = o.Amount,
-                    OrderStatus = o.OrderStatus,
-                    OrderItem = o.OrderItem?.Select(or => new OrderItem
-                    {
-                        Item = or.Item,
-                        Quantity = or.Quantity,
-                        UnitPrice = or.UnitPrice,
-                    }).ToList(),
-                    //CustomerId = o.CustomerId,
-                    DateCreated = o.DateCreated,
-                    Customer = o.Customer
-                }).ToList()
+            var (normalizedPageNumber, normalizedPageSize) = PaginationHelper.Normalize(pageNumber, pageSize);
+            var query = _orderRepository.QueryAllOrders().OrderByDescending(o => o.DateCreated);
+            var totalItems = await query.CountAsync(cancellationToken);
 
-            };
-        }
-
-        public async Task<BaseResponse<IEnumerable<OrderDto>>> GetOrderAsync(CancellationToken cancellationToken)
-        {
-            var item = await _orderRepository.GetAllOrders();
-            if (!item.Any())
+            if (totalItems == 0)
             {
                 _logger.LogError("No data found");
                 return new BaseResponse<IEnumerable<OrderDto>>
                 {
                     Message = "No data found",
-                    Status = false
+                    Status = false,
+                    Data = [],
+                    Pagination = PaginationHelper.Create(normalizedPageNumber, normalizedPageSize, totalItems)
                 };
             }
+
+            var pagedOrders = await query
+                .Skip((normalizedPageNumber - 1) * normalizedPageSize)
+                .Take(normalizedPageSize)
+                .Select(MapOrderToDtoExpression())
+                .ToListAsync(cancellationToken);
+
             return new BaseResponse<IEnumerable<OrderDto>>
             {
                 Message = "Data fetched successfully",
                 Status = true,
-                Data = item.Select(i => new OrderDto
-                {
-                    Id = i.Id,
-                    Amount = i.Amount,
-                    OrderStatus = i.OrderStatus,
-                    DeliveryAddress = i.DeliveryAddress,
-                    OrderItem = i.OrderItem?.Select(or => new OrderItem
-                    {
-                        Item = or.Item,
-                        Quantity = or.Quantity,
-                        UnitPrice = or.UnitPrice,
-                    }).ToList(),
-                    DateCreated = i.DateCreated,
-                    Customer = i.Customer
-
-                }).ToList()
+                Data = pagedOrders,
+                Pagination = PaginationHelper.Create(normalizedPageNumber, normalizedPageSize, totalItems)
             };
         }
 
-        public async Task<BaseResponse<IReadOnlyList<OrderDto>>> GetDeliveredOrderAsync(CancellationToken cancellationtoken)
+        public async Task<BaseResponse<IEnumerable<OrderDto>>> GetOrdersByCustomerAsync(Guid id, CancellationToken cancellationToken, int pageNumber = 1, int pageSize = 10)
         {
-            var order = await _orderRepository.GetDeliveredOrderAsync();
-            if (!order.Any())
+            var (normalizedPageNumber, normalizedPageSize) = PaginationHelper.Normalize(pageNumber, pageSize);
+            var customerId = await _customerRepository.Query<Customer>()
+                .AsNoTracking()
+                .Where(c => c.Id == id || c.UserId == id)
+                .Select(c => c.Id)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (customerId == Guid.Empty)
             {
-                _logger.LogError("No Order found");
-                return new BaseResponse<IReadOnlyList<OrderDto>>
+                _logger.LogError("Customer cannot be found");
+                return new BaseResponse<IEnumerable<OrderDto>>
                 {
-                    Message = "No Order Found",
-                    Status = false
+                    Message = "Customer cannot be found",
+                    Status = false,
+                    Data = [],
+                    Pagination = PaginationHelper.Create(normalizedPageNumber, normalizedPageSize, 0)
                 };
             }
-            _logger.LogInformation("Data Fetched Successfully");
-            return new BaseResponse<IReadOnlyList<OrderDto>>
+
+            var query = _orderRepository.QueryOrdersByCustomer(customerId).OrderByDescending(o => o.DateCreated);
+            var totalItems = await query.CountAsync(cancellationToken);
+
+            if (totalItems == 0)
             {
-                Message = "Data Fetched Successfully",
-                Status = true,
-                Data = order.Select(o => new OrderDto
+                _logger.LogError("No Order found");
+                return new BaseResponse<IEnumerable<OrderDto>>
                 {
-                    Id = o.Id,
-                    Amount = o.Amount,
-                    OrderStatus = o.OrderStatus,
-                    DeliveryAddress = o.DeliveryAddress,
-                    OrderItem = o.OrderItem?.Select(or => new OrderItem
-                    {
-                        Item = or.Item,
-                        Quantity = or.Quantity,
-                        UnitPrice = or.UnitPrice,
-                    }).ToList(),
-                    //CustomerId = o.CustomerId,
-                    DateCreated = o.DateCreated,
-                    Customer = o.Customer
-                }).ToList()
+                    Message = "No Order Found",
+                    Status = false,
+                    Data = [],
+                    Pagination = PaginationHelper.Create(normalizedPageNumber, normalizedPageSize, 0)
+                };
+            }
 
+            var pagedOrders = await query
+                .Skip((normalizedPageNumber - 1) * normalizedPageSize)
+                .Take(normalizedPageSize)
+                .Select(MapOrderToDtoExpression())
+                .ToListAsync(cancellationToken);
 
+            return new BaseResponse<IEnumerable<OrderDto>>
+            {
+                Message = "Data fetched Successfully",
+                Status = true,
+                Data = pagedOrders,
+                Pagination = PaginationHelper.Create(normalizedPageNumber, normalizedPageSize, totalItems)
             };
         }
 
         public async Task<BaseResponse<OrderDto>> GetOrderById(Guid id, CancellationToken cancellationtoken)
         {
-            var getOrder = await _orderRepository.GetOrderById(id);
-            if (getOrder == null)
+            var order = await _orderRepository.GetOrderById(id);
+            if (order == null)
             {
-                _logger.LogError("Order coudn't be found");
+                _logger.LogError("Order couldn't be found");
                 return new BaseResponse<OrderDto>
                 {
-                    Message = "Order coudn't be found",
+                    Message = "Order couldn't be found",
                     Status = false
                 };
             }
-            _logger.LogInformation($"Order fetched Successfully");
+
             return new BaseResponse<OrderDto>
             {
-                Message = "Data Fetched",
+                Message = "Data fetched",
                 Status = true,
-                Data = new OrderDto
-                {
-                    Id = getOrder.Id,
-                    Customer = getOrder.Customer,
-                    DeliveryAddress = getOrder.DeliveryAddress,
-                    DateCreated = getOrder.DateCreated,
-                    OrderItem = getOrder.OrderItem?.Select(i => new OrderItem 
-                    {
-                        Item = i.Item,
-                        Quantity = i.Quantity,
-                        UnitPrice = i.UnitPrice
-                    }).ToList(),
-                    Amount = getOrder.Amount,
-                    OrderStatus = getOrder.OrderStatus,
-
-                }
+                Data = MapOrderToDto(order)
             };
         }
 
         public async Task<BaseResponse<IReadOnlyList<OrderDto>>> GetPendingOrderAsync(CancellationToken cancellationtoken)
         {
-            var order = await _orderRepository.GetPendingOrderAsync();
-            if (!order.Any())
-            {
-                _logger.LogError("No Order found");
-                return new BaseResponse<IReadOnlyList<OrderDto>>
-                {
-                    Message = "No Order Found",
-                    Status = false
-                };
-            }
-            _logger.LogInformation("Data Fetched Successfully");
-            return new BaseResponse<IReadOnlyList<OrderDto>>
-            {
-                Message = "Data Fetched Successfully",
-                Status = true,
-                Data = order.Select(o => new OrderDto
-                {
-                    Id = o.Id,
-                    Amount = o.Amount,
-                    OrderStatus = o.OrderStatus,
-                    DeliveryAddress = o.DeliveryAddress,
-                    OrderItem = o.OrderItem?.Select(or => new OrderItem
-                    {
-                        Item = or.Item,
-                        Quantity = or.Quantity,
-                        UnitPrice = or.UnitPrice,
-                    }).ToList(),
-                    //CustomerId = o.CustomerId,
-                    DateCreated = o.DateCreated,
-                    Customer = o.Customer
-                }).ToList()
-
-
-            };
+            var orders = await _orderRepository.GetPendingOrderAsync();
+            return MapOrderListResponse(orders, "No Order Found");
         }
 
         public async Task<BaseResponse<IReadOnlyList<OrderDto>>> GetProcessingOrderAsync(CancellationToken cancellationtoken)
         {
-            var order = await _orderRepository.GetProcessingOrderAsync();
-            if (!order.Any())
-            {
-                _logger.LogError("No Order found");
-                return new BaseResponse<IReadOnlyList<OrderDto>>
-                {
-                    Message = "No Order Found",
-                    Status = false
-                };
-            }
-            _logger.LogInformation("Data Fetched Successfully");
-            return new BaseResponse<IReadOnlyList<OrderDto>>
-            {
-                Message = "Data Fetched Successfully",
-                Status = true,
-                Data = order.Select(o => new OrderDto
-                {
-                    Id = o.Id,
-                    Amount = o.Amount,
-                    OrderStatus = o.OrderStatus,
-                    OrderItem = o.OrderItem?.Select(or => new OrderItem
-                    {
-                        Item = or.Item,
-                        Quantity = or.Quantity,
-                        UnitPrice = or.UnitPrice,
-                    }).ToList(),
-                    //CustomerId = o.CustomerId,
-                    DateCreated = o.DateCreated,
-                    Customer = o.Customer
-                }).ToList()
-
-            };
+            var orders = await _orderRepository.GetProcessingOrderAsync();
+            return MapOrderListResponse(orders, "No Order Found");
         }
 
-        public async Task<BaseResponse<IEnumerable<OrderDto>>> GetOrdersByCustomerAsync(Guid id, CancellationToken cancellationToken)
+        public async Task<BaseResponse<IReadOnlyList<OrderDto>>> GetDeliveredOrderAsync(CancellationToken cancellationtoken)
         {
-            var orders = (await _orderRepository.GetOrdersByCustomerAsync(id)).ToList();
+            var orders = await _orderRepository.GetDeliveredOrderAsync();
+            return MapOrderListResponse(orders, "No Order Found");
+        }
 
-            if (!orders.Any())
-            {
-                var customer = await _customerRepository.Get<Customer>(c => c.UserId == id);
-                if (customer != null)
-                {
-                    orders = (await _orderRepository.GetOrdersByCustomerAsync(customer.Id)).ToList();
-                }
-            }
-            if (!orders.Any())
-            {
-
-                _logger.LogError("No Order found");
-                return new BaseResponse<IEnumerable<OrderDto>>
-                {
-                    Message = "No Order Found",
-                    Status = false
-                };
-            }
-            return new BaseResponse<IEnumerable<OrderDto>>
-            {
-                Message = "Data fetched Successfully",
-                Status = true,
-                Data = orders.Select(o => new OrderDto
-                {
-                    Id = o.Id,
-                    DateCreated = o.DateCreated,
-                    DeliveryAddress = o.DeliveryAddress,
-                    OrderItem = o.OrderItem.Select(or => new OrderItem
-                    {
-                        Item = or.Item,
-                        Quantity = or.Quantity,
-                        TotalPrice = or.TotalPrice,
-                    }).ToList(),
-                    OrderStatus = o.OrderStatus,
-
-
-
-
-                }).ToList()
-            };
+        public async Task<BaseResponse<IReadOnlyList<OrderDto>>> GetCancelledOrderAsync(CancellationToken cancellationtoken)
+        {
+            var orders = await _orderRepository.GetCancelledOrderAsync();
+            return MapOrderListResponse(orders, "No Order Found");
         }
 
         public async Task<BaseResponse<bool>> UpdateAsync(Guid id, UpdateOrderRequestModel model)
         {
-            var getOrder = await _orderRepository.GetOrderById(id);
-            if (getOrder == null)
+            var order = await _orderRepository.GetOrderById(id);
+            if (order == null)
             {
                 _logger.LogError("Order is not found");
                 return new BaseResponse<bool>
@@ -437,37 +304,108 @@ namespace EMS.Implementation.Services
                     Status = false
                 };
             }
-            if (model.Status == Models.Enums.Status.Cancelled)
-            {
-                var orderItems = getOrder.OrderItem;
-                if (orderItems != null)
-                {
-                    foreach (var item in orderItems)
-                    {
-                        var getItem = await _itemRepository.Get<Item>(i => i.Id == item.ItemId);
 
-                        if (getItem != null)
-                        {
-                            getItem.QuantityInStock += item.Quantity;
-                        }
-                    }
+            if (model.Status == Models.Enums.Status.Cancelled && order.OrderItem != null)
+            {
+                foreach (var item in order.OrderItem)
+                {
+                    await _itemRepository.IncrementStockAsync(item.ItemId, item.Quantity, CancellationToken.None);
                 }
             }
-            if (model == null)
+
+            order.OrderStatus = model.Status;
+            await _unitOfWork.SaveChangesAsync();
+
+            return new BaseResponse<bool>
             {
-                _logger.LogError("field cannot be null");
-                return new BaseResponse<bool>
+                Message = "Order updated successfully",
+                Status = true,
+            };
+        }
+
+        private async Task<Customer?> ResolveCustomerAsync(Guid customerOrUserId)
+        {
+            var customer = await _customerRepository.Get<Customer>(c => c.Id == customerOrUserId);
+            if (customer != null)
+            {
+                return customer;
+            }
+
+            return await _customerRepository.Get<Customer>(c => c.UserId == customerOrUserId);
+        }
+
+        private BaseResponse<IReadOnlyList<OrderDto>> MapOrderListResponse(IEnumerable<Order> orders, string emptyMessage)
+        {
+            var mappedOrders = orders.Select(MapOrderToDto).ToList();
+            if (mappedOrders.Count == 0)
+            {
+                _logger.LogError("No Order found");
+                return new BaseResponse<IReadOnlyList<OrderDto>>
                 {
-                    Message = "field cannot be null",
+                    Message = emptyMessage,
                     Status = false
                 };
             }
-            getOrder.OrderStatus = model.Status;
-            await _unitOfWork.SaveChangesAsync();
-            return new BaseResponse<bool>
+
+            return new BaseResponse<IReadOnlyList<OrderDto>>
             {
-                Message = "order updated successfully",
-                Status = true,              
+                Message = "Data Fetched Successfully",
+                Status = true,
+                Data = mappedOrders
+            };
+        }
+
+        private static OrderDto MapOrderToDto(Order order)
+        {
+            return new OrderDto
+            {
+                Id = order.Id,
+                DateCreated = order.DateCreated,
+                DateModified = order.DateModified,
+                DeliveryAddress = order.DeliveryAddress,
+                CustomerId = order.CustomerId,
+                Customer = order.Customer,
+                Amount = order.Amount,
+                OrderStatus = order.OrderStatus,
+                OrderItem = order.OrderItem?.Select(or => new OrderItem
+                {
+                    Id = or.Id,
+                    ItemId = or.ItemId,
+                    Item = or.Item,
+                    Quantity = or.Quantity,
+                    UnitPrice = or.UnitPrice,
+                    TotalPrice = or.TotalPrice,
+                    DateCreated = or.DateCreated,
+                    DateModified = or.DateModified,
+                    OrderId = or.OrderId
+                }).ToList()
+            };
+        }
+
+        private static System.Linq.Expressions.Expression<Func<Order, OrderDto>> MapOrderToDtoExpression()
+        {
+            return order => new OrderDto
+            {
+                Id = order.Id,
+                DateCreated = order.DateCreated,
+                DateModified = order.DateModified,
+                DeliveryAddress = order.DeliveryAddress,
+                CustomerId = order.CustomerId,
+                Customer = order.Customer,
+                Amount = order.Amount,
+                OrderStatus = order.OrderStatus,
+                OrderItem = order.OrderItem!.Select(or => new OrderItem
+                {
+                    Id = or.Id,
+                    ItemId = or.ItemId,
+                    Item = or.Item,
+                    Quantity = or.Quantity,
+                    UnitPrice = or.UnitPrice,
+                    TotalPrice = or.TotalPrice,
+                    DateCreated = or.DateCreated,
+                    DateModified = or.DateModified,
+                    OrderId = or.OrderId
+                }).ToList()
             };
         }
     }

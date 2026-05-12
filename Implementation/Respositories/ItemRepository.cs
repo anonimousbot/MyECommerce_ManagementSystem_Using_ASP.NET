@@ -25,5 +25,31 @@ namespace EMS.Implementation.Respositories
                .AsNoTracking()
                .FirstOrDefaultAsync(d => d.Id == itemId);
         }
+
+        public async Task<bool> TryDecrementStockAsync(Guid itemId, int quantity, CancellationToken cancellationToken)
+        {
+            if (quantity <= 0) return true;
+
+            var affected = await _emsContext.Set<Item>()
+                .Where(i => i.Id == itemId && i.QuantityInStock >= quantity)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(i => i.QuantityInStock, i => i.QuantityInStock - quantity)
+                    .SetProperty(i => i.DateModified, _ => DateTime.UtcNow),
+                    cancellationToken);
+
+            return affected == 1;
+        }
+
+        public async Task IncrementStockAsync(Guid itemId, int quantity, CancellationToken cancellationToken)
+        {
+            if (quantity <= 0) return;
+
+            await _emsContext.Set<Item>()
+                .Where(i => i.Id == itemId)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(i => i.QuantityInStock, i => i.QuantityInStock + quantity)
+                    .SetProperty(i => i.DateModified, _ => DateTime.UtcNow),
+                    cancellationToken);
+        }
     }
 }

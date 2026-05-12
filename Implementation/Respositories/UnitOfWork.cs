@@ -21,5 +21,10 @@ namespace EMS.Implementation.Respositories
         {
             return  await _context.SaveChangesAsync(cancellationToken);
         }
+
+        public void ClearTracking()
+        {
+            _context.ChangeTracker.Clear();
+        }
     }
 }

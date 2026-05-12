@@ -10,15 +10,57 @@
     <title>@ViewData["Title"] - Customer Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/ts-theme.css" asp-append-version="true" />
     <style>
+        :root {
+            --brand-primary: #6c2bd9;
+            --brand-accent: #7c3aed;
+            --surface-dark: #1e0744;
+            --surface-light: #f8fafc;
+            --card-border: rgba(148, 163, 184, 0.2);
+        }
+
+        @@keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @@keyframes fadeSlideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         body {
             min-height: 100vh;
+            background: linear-gradient(120deg, #f8f4ff, #f5f3ff, #f8fafc);
+            background-size: 200% 200%;
+            animation: gradientShift 14s ease infinite;
+        }
+
+        .top-nav {
+            background: rgba(255, 255, 255, 0.88) !important;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+        }
+
+        .top-nav .navbar-brand,
+        .top-nav .nav-link {
+            color: #0f172a !important;
+            font-weight: 700;
         }
 
         .sidebar {
             min-height: calc(100vh - 56px);
-            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
-            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            height: calc(100vh - 56px);
+            position: sticky;
+            top: 56px;
+            align-self: flex-start;
+            overflow-y: auto;
+            background: linear-gradient(180deg, #1e0744 0%, #3b0f9e 100%);
+            box-shadow: 8px 0 30px rgba(15, 23, 42, 0.18);
+            border-right: 1px solid rgba(255,255,255,0.1);
         }
 
             .sidebar .nav-link {
@@ -26,18 +68,42 @@
                 padding: 1rem 1.5rem;
                 margin: 0.25rem 0;
                 border-radius: 0.5rem;
-                transition: all 0.3s;
+                transition: all 0.3s ease;
+                position: relative;
+                overflow: hidden;
+                z-index: 1;
             }
+
+                .sidebar .nav-link::before {
+                    content: "";
+                    position: absolute;
+                    inset: 0;
+                    background: linear-gradient(90deg, rgba(108,43,217,0.28), rgba(124,58,237,0.22));
+                    opacity: 0;
+                    transition: opacity 0.3s ease;
+                    z-index: 0;
+                }
+
+                .sidebar .nav-link > * {
+                    position: relative;
+                    z-index: 1;
+                }
 
                 .sidebar .nav-link:hover {
                     color: white;
-                    background: rgba(255,255,255,0.1);
+                    background: rgba(255,255,255,0.08);
                     transform: translateX(5px);
+                }
+
+                .sidebar .nav-link:hover::before,
+                .sidebar .nav-link.active {
+                    opacity: 1;
                 }
 
                 .sidebar .nav-link.active {
                     color: white;
-                    background: rgba(255,255,255,0.2);
+                    background: rgba(108, 43, 217, 0.38);
+                    box-shadow: 0 10px 22px rgba(108, 43, 217, 0.28);
                 }
 
                 .sidebar .nav-link i {
@@ -46,18 +112,49 @@
                 }
 
         .main-content {
-            background: #f8f9fa;
+            background: transparent;
             min-height: calc(100vh - 56px);
+            animation: fadeSlideIn 0.45s ease;
+        }
+
+        .content-shell {
+            background: rgba(255,255,255,0.82);
+            border: 1px solid var(--card-border);
+            border-radius: 18px;
+            box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+            backdrop-filter: blur(8px);
         }
 
         .navbar {
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
+
+        .cart-badge {
+            top: 2px;
+            right: -6px;
+            font-size: 0.7rem;
+            min-width: 18px;
+            height: 18px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @@media (max-width: 767.98px) {
+            .sidebar {
+                position: static;
+                top: auto;
+                height: auto;
+                min-height: auto;
+                overflow-y: visible;
+            }
+        }
     </style>
 </head>
 <body>
     <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <nav class="navbar navbar-expand-lg navbar-dark top-nav">
         <div class="container-fluid">
             <a class="navbar-brand fw-bold" href="/">
                 <i class="fas fa-store me-2"></i>T-SOCKET GADGETS
@@ -72,6 +169,11 @@
                             <i class="fas fa-shopping-cart me-1"></i>Orders
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <a class="dropdown-item" asp-action="Index" asp-controller="Cart">
+                                    <i class="fas fa-shopping-cart me-2"></i>My Cart
+                                </a>
+                            </li>
                             @* <li>
                                 <a class="dropdown-item" asp-action="Create" asp-controller="Order">
                                     <i class="fas fa-plus me-2"></i>Create Order
@@ -83,6 +185,12 @@
                                 </a>
                             </li>
                         </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link position-relative" asp-action="Index" asp-controller="Cart">
+                            <i class="fas fa-shopping-cart me-1"></i>Cart
+                            <span id="cart-count-badge" class="badge rounded-pill bg-danger position-absolute cart-badge d-none">0</span>
+                        </a>
                     </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
@@ -121,13 +229,18 @@
                                 <i class="fas fa-box"></i>Products
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" asp-action="Index" asp-controller="Cart">
+                                <i class="fas fa-shopping-cart"></i>Cart
+                            </a>
+                        </li>
                         @* <li class="nav-item">
                             <a class="nav-link" href="/wishlist">
                                 <i class="fas fa-heart"></i>Wishlist
                             </a>
                         </li> *@
                         <li class="nav-item">
-                            <a class="nav-link" asp-action="GetOrdersByCustomerId" asp-controller="Order">
+                            <a class="nav-link" asp-action="CustomerProfile" asp-controller="Customer">
                                 <i class="fas fa-user"></i>Profile
                             </a>
                         </li>
@@ -136,11 +249,6 @@
                                 <i class="fas fa-map-marker-alt"></i>Addresses
                             </a>
                         </li> *@
-                        <li class="nav-item">
-                            <a class="nav-link" href="/payment">
-                                <i class="fas fa-credit-card"></i>Payment
-                            </a>
-                        </li>
                         <li class="nav-item">
                             <a class="nav-link" href="https://mail.google.com/mail/?view=cm&fs=1&to=buthman111@gmail.com&su=Message-To-Support&body=Type-Message">
                                 <i class="fas fa-headset"></i>Support
@@ -153,13 +261,51 @@
             <!-- Main Content -->
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 main-content">
                 <div class="py-4">
+                    <div class="content-shell p-4 p-lg-5">
                     @RenderBody()
+                    </div>
                 </div>
             </main>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        (function () {
+            const badge = document.getElementById('cart-count-badge');
+            if (!badge) return;
+
+            const updateCartCount = async () => {
+                try {
+                    const response = await fetch('@Url.Action("Count", "Cart")', {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+                    if (!response.ok) return;
+
+                    const payload = await response.json();
+                    const count = Number(payload?.count ?? 0);
+                    badge.textContent = count > 99 ? '99+' : String(count);
+                    badge.classList.toggle('d-none', count <= 0);
+                } catch {
+                }
+            };
+
+            updateCartCount();
+            window.setInterval(updateCartCount, 5000);
+        })();
+
+        (function () {
+            const currentPath = window.location.pathname.toLowerCase();
+            document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+                const href = (link.getAttribute('href') || '').toLowerCase();
+                if (href && href !== '/' && currentPath.startsWith(href)) {
+                    link.classList.add('active');
+                } else if (href && href !== '/' && currentPath !== href) {
+                    link.classList.remove('active');
+                }
+            });
+        })();
+    </script>
     @RenderSection("Scripts", required: false)
 </body>
 </html>

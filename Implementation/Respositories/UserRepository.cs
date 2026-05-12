@@ -55,5 +55,15 @@ namespace EMS.Implementation.Respositories
                 .Include(c => c.Customer)
                 .SingleOrDefaultAsync(u => u.Email == email);
         }
+
+        public async Task<User> GetUserByGoogleId(string googleId)
+        {
+            return await _emsContext.Set<User>()
+                .Include(u => u.UserRoles)
+                .ThenInclude(r => r.Role)
+                .Include(a => a.Admin)
+                .Include(c => c.Customer)
+                .SingleOrDefaultAsync(u => u.GoogleId == googleId);
+        }
     }
 }

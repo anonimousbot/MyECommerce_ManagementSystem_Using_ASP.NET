@@ -9,5 +9,7 @@ namespace EMS.Models.Entities
 
         // Collection Of Order
         public ICollection<Order>? Orders { get; set; }
+
+        public Cart? Cart { get; set; }
     }
 }

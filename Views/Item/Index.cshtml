@@ -1,67 +1,498 @@
-﻿@using EMS.Models.DTOs
-
+@using EMS.Models.DTOs
 @model BaseResponse<IEnumerable<EMS.Models.DTOs.Items.ItemDto>>
+
 @{
-
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
-    ViewBag.Title = "Admin Dashboard";
+    ViewData["Title"] = "Inventory";
+    ViewData["AdminHeading"] = "Product Inventory";
+    ViewData["AdminSubtitle"] = "Review catalog health, search SKUs, watch low-stock items, and move quickly into edit flows.";
+
+    var items = (Model?.Data ?? Enumerable.Empty<EMS.Models.DTOs.Items.ItemDto>()).ToList();
+    var totalItems = Model?.Pagination?.TotalItems ?? items.Count;
+    var pageItems = items.Count;
+    var criticalCount = items.Count(x => x.QuantityInStock <= 5);
+    var restockCount = items.Count(x => x.QuantityInStock > 5 && x.QuantityInStock <= 20);
+    var maxStock = items.Any() ? Math.Max(items.Max(x => x.QuantityInStock), 1) : 1;
+    var brands = items
+        .Select(x => x.Brand?.Trim())
+        .Where(x => !string.IsNullOrWhiteSpace(x))
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .OrderBy(x => x)
+        .Take(6)
+        .ToList();
+
+    string GetStockGroup(EMS.Models.DTOs.Items.ItemDto item) =>
+        item.QuantityInStock <= 5 ? "critical" :
+        item.QuantityInStock <= 20 ? "restock" :
+        "healthy";
+
+    string GetStatusText(EMS.Models.DTOs.Items.ItemDto item) =>
+        item.QuantityInStock <= 0 ? "Out of Stock" :
+        item.QuantityInStock <= 5 ? "Restock" :
+        item.QuantityInStock <= 20 ? "Low Stock" :
+        "Active";
+
+    string GetStatusClasses(EMS.Models.DTOs.Items.ItemDto item) =>
+        item.QuantityInStock <= 0 ? "bg-red-100 text-red-800" :
+        item.QuantityInStock <= 5 ? "bg-[var(--secondary-fixed)] text-[var(--on-secondary-fixed)]" :
+        item.QuantityInStock <= 20 ? "bg-amber-100 text-amber-800" :
+        "bg-green-100 text-green-800";
 }
-<h2>Welcome to the Admin Dashboard 👑</h2>
-<div class="container mt-4">
-<h2>Admin Dashboard 👑</h2>
-<p class="text-muted">Manage and view all items in the system</p>
-<hr />
 
-<!-- Items Table -->
-<h4 class="mt-4">Available Items</h4>
-<table class="table table-striped table-bordered">
-    <thead class="table-light">
-        <tr>
-            <th>#</th>
-            <th>Item Name</th>
-            <th>Category</th>
-            <th>Price (₦)</th>
-            <th>Quantity</th>
-            <th>Date Created</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        @if (Model?.Data != null && Model.Data.Any())
-        {
-            int count = 1;
-            foreach (var item in Model.Data)
-            {
-                <tr>
-                    <td>@count</td>
-                    <td>@item.Name</td>
-                    <td>@item.Brand</td>
-                    <td>@item.Price.ToString().TrimEnd('0').TrimEnd('.')</td>
-                    <td>@item.QuantityInStock</td>
-                    <td>@item.DateCreated.ToShortDateString()</td>
-                    <td>
-                        <a asp-action="GetItemById" asp-Controller="Item" asp-route-id="@item.Id" class="btn btn-sm btn-primary">View</a>
-
-                        <a asp-action="Delete" asp-Controller="Item" asp-route-id="@item.Id" class="btn btn-sm btn-danger">Delete</a>
-                    </td>
-                </tr>
-                count++;
-            }
+@section Head {
+    <style>
+        :root {
+            --on-primary-container: #dac7ff;
+            --secondary-fixed: #ffdbca;
+            --inverse-on-surface: #f6eefc;
+            --on-secondary-fixed: #341100;
+            --inverse-primary: #d2bcff;
+            --secondary: #9d4300;
+            --on-background: #1d1a24;
+            --on-tertiary-fixed: #131b2e;
+            --primary: #5300b9;
+            --on-primary-fixed: #25005a;
+            --tertiary: #394156;
+            --surface-container: #f3ebf9;
+            --surface-bright: #fef7ff;
+            --on-secondary: #ffffff;
+            --surface-container-high: #ede5f3;
+            --tertiary-fixed-dim: #bec6e0;
+            --primary-fixed-dim: #d2bcff;
+            --on-primary-fixed-variant: #5900c7;
+            --primary-fixed: #eaddff;
+            --inverse-surface: #332f39;
+            --surface: #fef7ff;
+            --on-primary: #ffffff;
+            --surface-variant: #e7e0ee;
+            --surface-container-highest: #e7e0ee;
+            --on-tertiary: #ffffff;
+            --on-tertiary-fixed-variant: #3f465c;
+            --secondary-fixed-dim: #ffb690;
+            --error-container: #ffdad6;
+            --outline-variant: #ccc3d7;
+            --background: #fef7ff;
+            --tertiary-container: #51586e;
+            --primary-container: #6c2bd9;
+            --on-secondary-container: #5c2400;
+            --surface-container-lowest: #ffffff;
+            --on-surface-variant: #4a4455;
+            --on-error-container: #93000a;
+            --on-tertiary-container: #c8cfe9;
+            --outline: #7b7486;
+            --on-error: #ffffff;
+            --tertiary-fixed: #dae2fd;
+            --error: #ba1a1a;
+            --surface-container-low: #f9f1ff;
+            --secondary-container: #fd761a;
+            --on-surface: #1d1a24;
+            --surface-tint: #7233df;
+            --surface-dim: #dfd7e5;
+            --on-secondary-fixed-variant: #783200;
         }
-        else
-        {
-            <tr>
-                <td colspan="8" class="text-center text-muted">No items found.</td>
-            </tr>
-        }
-    </tbody>
-</table>
 
-    <!-- Placeholder for Future Additions -->
-    <div class="mt-5">
-        <h5>📦 Future Admin Features (Coming Soon)</h5>
-        <div class="card p-3 shadow-sm text-center">
-            <p class="text-muted">Space reserved for analytics, reports, or item statistics.</p>
+        .inventory-shell {
+            color: var(--on-surface);
+        }
+
+        .inventory-scroll::-webkit-scrollbar {
+            height: 10px;
+        }
+
+        .inventory-scroll::-webkit-scrollbar-thumb {
+            background: rgba(123, 116, 134, 0.28);
+            border-radius: 999px;
+        }
+    </style>
+}
+
+@section AdminActions {
+    <a asp-action="Create" asp-controller="Item" class="inline-flex items-center gap-2 rounded-xl bg-[var(--primary)] px-4 py-3 text-sm font-bold text-[var(--on-primary)] shadow-sm transition hover:opacity-90">
+        <span class="material-symbols-outlined text-base">add</span>
+        Add Product
+    </a>
+}
+
+<div class="inventory-shell space-y-6">
+    <section class="rounded-[1.5rem] border border-[var(--outline-variant)] bg-[var(--surface)] shadow-sm">
+        <div class="flex flex-col gap-4 border-b border-[var(--outline-variant)] px-4 py-4 lg:flex-row lg:items-center lg:justify-between lg:px-6">
+            <div class="flex items-center gap-4">
+                <div class="hidden h-12 w-12 items-center justify-center rounded-xl bg-[var(--primary-container)] text-[var(--on-primary)] sm:flex">
+                    <span class="material-symbols-outlined">inventory_2</span>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold text-[var(--primary)]">Product Inventory</h2>
+                    <p class="mt-1 text-sm text-[var(--on-surface-variant)]">Showing @pageItems of @totalItems catalog entries on this page.</p>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <label class="relative block min-w-0 sm:min-w-[320px]">
+                    <span class="material-symbols-outlined pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--outline)]">search</span>
+                    <input id="inventory-search"
+                           type="text"
+                           placeholder="Search SKU, name, or brand..."
+                           class="w-full rounded-xl border border-[var(--outline-variant)] bg-[var(--surface-container)] py-3 pl-12 pr-4 text-sm text-[var(--on-surface)] outline-none transition focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-fixed-dim)]" />
+                </label>
+                <div class="flex items-center gap-3 self-end sm:self-auto">
+                    <button type="button" class="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] text-[var(--on-surface-variant)] transition hover:bg-[var(--surface-container-highest)]" title="Notifications">
+                        <span class="material-symbols-outlined">notifications</span>
+                    </button>
+                </div>
+            </div>
         </div>
-    </div>
+
+        <div class="flex flex-col gap-6 p-4 xl:flex-row xl:p-6">
+            <aside class="w-full shrink-0 xl:w-72">
+                <div class="space-y-4">
+                    <div class="rounded-xl border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] p-4 shadow-sm">
+                        <h3 class="mb-4 text-xs font-bold uppercase tracking-[0.16em] text-[var(--outline)]">Brands</h3>
+                        <div class="space-y-2">
+                            @if (brands.Any())
+                            {
+                                foreach (var brand in brands)
+                                {
+                                    var brandId = $"brand-{brand!.Replace(" ", "-").ToLowerInvariant()}";
+                                    <label class="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 transition hover:bg-[var(--surface-container)]">
+                                        <input type="checkbox"
+                                               class="inventory-brand-filter rounded border-[var(--outline-variant)] text-[var(--primary)] focus:ring-[var(--primary)]"
+                                               id="@brandId"
+                                               value="@brand" />
+                                        <span class="text-sm text-[var(--on-surface)]">@brand</span>
+                                    </label>
+                                }
+                            }
+                            else
+                            {
+                                <p class="text-sm text-[var(--on-surface-variant)]">No brands available on this page yet.</p>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="rounded-xl border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] p-4 shadow-sm">
+                        <h3 class="mb-4 text-xs font-bold uppercase tracking-[0.16em] text-[var(--outline)]">Stock Level</h3>
+                        <div class="space-y-3">
+                            <label class="flex cursor-pointer items-center justify-between gap-3 rounded-lg px-3 py-2 transition hover:bg-[var(--surface-container)]">
+                                <span class="flex items-center gap-3 text-sm text-[var(--on-surface)]">
+                                    <input type="radio" name="stock-filter" class="inventory-stock-filter border-[var(--outline-variant)] text-[var(--primary)] focus:ring-[var(--primary)]" value="all" checked />
+                                    All items
+                                </span>
+                                <span class="rounded-full bg-[var(--surface-container)] px-2 py-1 text-xs font-bold text-[var(--on-surface-variant)]">@pageItems</span>
+                            </label>
+                            <label class="flex cursor-pointer items-center justify-between gap-3 rounded-lg px-3 py-2 transition hover:bg-[var(--surface-container)]">
+                                <span class="flex items-center gap-3 text-sm text-[var(--on-surface)]">
+                                    <input type="radio" name="stock-filter" class="inventory-stock-filter border-[var(--outline-variant)] text-[var(--primary)] focus:ring-[var(--primary)]" value="critical" />
+                                    Critical low
+                                </span>
+                                <span class="rounded-full bg-[var(--error-container)] px-2 py-1 text-xs font-bold text-[var(--on-error-container)]">@criticalCount</span>
+                            </label>
+                            <label class="flex cursor-pointer items-center justify-between gap-3 rounded-lg px-3 py-2 transition hover:bg-[var(--surface-container)]">
+                                <span class="flex items-center gap-3 text-sm text-[var(--on-surface)]">
+                                    <input type="radio" name="stock-filter" class="inventory-stock-filter border-[var(--outline-variant)] text-[var(--primary)] focus:ring-[var(--primary)]" value="restock" />
+                                    Pending restock
+                                </span>
+                                <span class="rounded-full bg-[var(--secondary-fixed)] px-2 py-1 text-xs font-bold text-[var(--on-secondary-fixed)]">@restockCount</span>
+                            </label>
+                            <label class="flex cursor-pointer items-center justify-between gap-3 rounded-lg px-3 py-2 transition hover:bg-[var(--surface-container)]">
+                                <span class="flex items-center gap-3 text-sm text-[var(--on-surface)]">
+                                    <input type="radio" name="stock-filter" class="inventory-stock-filter border-[var(--outline-variant)] text-[var(--primary)] focus:ring-[var(--primary)]" value="healthy" />
+                                    Healthy stock
+                                </span>
+                                <span class="rounded-full bg-green-100 px-2 py-1 text-xs font-bold text-green-800">@(pageItems - criticalCount - restockCount)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <button id="inventory-reset-filters"
+                            type="button"
+                            class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--outline)] px-4 py-3 text-sm font-bold text-[var(--on-surface-variant)] transition hover:bg-[var(--surface-variant)]">
+                        <span class="material-symbols-outlined text-base">filter_list</span>
+                        Reset All Filters
+                    </button>
+                </div>
+            </aside>
+
+            <div class="min-w-0 flex-1 space-y-4">
+                <div class="flex flex-col gap-3 rounded-xl border border-[var(--outline-variant)] bg-[var(--surface-container-high)] px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div class="flex flex-wrap items-center gap-3">
+                        <span id="inventory-selection-text" class="text-sm font-bold text-[var(--on-surface-variant)]">0 items selected</span>
+                        <div class="hidden h-6 w-px bg-[var(--outline-variant)] lg:block"></div>
+                        <a href="@Url.Action("Create", "Item")" class="inline-flex items-center gap-1 text-sm font-bold text-[var(--primary)] hover:underline">
+                            <span class="material-symbols-outlined text-[18px]">edit</span>
+                            Add New
+                        </a>
+                        <span class="inline-flex items-center gap-1 text-sm font-bold text-[var(--error)]">
+                            <span class="material-symbols-outlined text-[18px]">warning</span>
+                            @criticalCount critical
+                        </span>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <button type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-lg text-[var(--on-surface-variant)] transition hover:bg-[var(--surface-variant)]" title="Export">
+                            <span class="material-symbols-outlined">download</span>
+                        </button>
+                        <button type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-lg text-[var(--on-surface-variant)] transition hover:bg-[var(--surface-variant)]" title="Print">
+                            <span class="material-symbols-outlined">print</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-hidden rounded-xl border border-[var(--outline-variant)] bg-[var(--surface)] shadow-sm">
+                    <div class="inventory-scroll overflow-x-auto">
+                        <table class="min-w-full border-collapse">
+                            <thead>
+                                <tr class="border-b border-[var(--outline-variant)] bg-[var(--surface-container-low)]">
+                                    <th class="w-12 p-4 text-left">
+                                        <input id="inventory-select-all" type="checkbox" class="rounded border-[var(--outline-variant)] text-[var(--primary)] focus:ring-[var(--primary)]" />
+                                    </th>
+                                    <th class="p-4 text-left text-xs font-bold uppercase tracking-[0.12em] text-[var(--on-surface-variant)]">Product</th>
+                                    <th class="p-4 text-left text-xs font-bold uppercase tracking-[0.12em] text-[var(--on-surface-variant)]">SKU</th>
+                                    <th class="p-4 text-left text-xs font-bold uppercase tracking-[0.12em] text-[var(--on-surface-variant)]">Brand</th>
+                                    <th class="p-4 text-left text-xs font-bold uppercase tracking-[0.12em] text-[var(--on-surface-variant)]">Stock Level</th>
+                                    <th class="p-4 text-left text-xs font-bold uppercase tracking-[0.12em] text-[var(--on-surface-variant)]">Price (NGN)</th>
+                                    <th class="p-4 text-left text-xs font-bold uppercase tracking-[0.12em] text-[var(--on-surface-variant)]">Status</th>
+                                    <th class="p-4 text-right text-xs font-bold uppercase tracking-[0.12em] text-[var(--on-surface-variant)]">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventory-table-body" class="divide-y divide-[var(--outline-variant)]">
+                                @if (items.Any())
+                                {
+                                    foreach (var item in items)
+                                    {
+                                        var stockGroup = GetStockGroup(item);
+                                        var stockPercent = Math.Max(6, (int)Math.Round((double)item.QuantityInStock / maxStock * 100d));
+                                        var sku = $"EMS-{item.Id.ToString("N")[..8].ToUpperInvariant()}";
+                                        var statusText = GetStatusText(item);
+                                        var statusClasses = GetStatusClasses(item);
+                                        var barColor = stockGroup == "critical"
+                                            ? "bg-[var(--error)]"
+                                            : stockGroup == "restock"
+                                                ? "bg-[var(--secondary-container)]"
+                                                : "bg-[var(--primary)]";
+                                        var trackColor = stockGroup == "critical"
+                                            ? "bg-[var(--error-container)]"
+                                            : "bg-[var(--surface-variant)]";
+
+                                        <tr class="inventory-row transition hover:bg-[var(--surface-container-low)]"
+                                            data-search="@($"{item.Name} {item.Brand} {sku}".ToLowerInvariant())"
+                                            data-brand="@item.Brand.ToLowerInvariant()"
+                                            data-stock-group="@stockGroup">
+                                            <td class="p-4">
+                                                <input type="checkbox"
+                                                       class="inventory-row-checkbox rounded border-[var(--outline-variant)] text-[var(--primary)] focus:ring-[var(--primary)]"
+                                                       value="@item.Id" />
+                                            </td>
+                                            <td class="p-4">
+                                                <div class="flex items-center gap-4">
+                                                    <div class="h-12 w-12 overflow-hidden rounded-lg border border-[var(--outline-variant)] bg-[var(--surface-variant)]">
+                                                        @if (!string.IsNullOrWhiteSpace(item.ImagePath))
+                                                        {
+                                                            <img src="@item.ImagePath" alt="@item.Name" class="h-full w-full object-cover" />
+                                                        }
+                                                        else
+                                                        {
+                                                            <div class="flex h-full w-full items-center justify-center text-[var(--primary)]">
+                                                                <span class="material-symbols-outlined">inventory_2</span>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                    <div class="min-w-0">
+                                                        <a asp-action="GetItemById"
+                                                           asp-controller="Item"
+                                                           asp-route-id="@item.Id"
+                                                           class="block truncate text-sm font-bold text-[var(--primary)] transition group-hover:underline hover:underline">
+                                                            @item.Name
+                                                        </a>
+                                                        <p class="mt-1 truncate text-xs text-[var(--on-surface-variant)]">Added @item.DateCreated.ToString("dd MMM yyyy")</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="p-4 font-mono text-sm text-[var(--outline)]">@sku</td>
+                                            <td class="p-4 text-sm text-[var(--on-surface)]">@item.Brand</td>
+                                            <td class="p-4">
+                                                <div class="flex items-center gap-3">
+                                                    <div class="h-2 w-24 overflow-hidden rounded-full @trackColor">
+                                                        <div class="h-full @barColor" style="width:@stockPercent%"></div>
+                                                    </div>
+                                                    <span class="font-mono text-sm @(stockGroup == "critical" ? "font-bold text-[var(--error)]" : "text-[var(--on-surface)]")">@item.QuantityInStock</span>
+                                                    @if (stockGroup == "critical")
+                                                    {
+                                                        <span class="material-symbols-outlined text-[16px] text-[var(--error)]">warning</span>
+                                                    }
+                                                </div>
+                                            </td>
+                                            <td class="p-4 text-sm font-bold text-[var(--primary)]">&#8358;@item.Price.ToString("N2")</td>
+                                            <td class="p-4">
+                                                <span class="inline-flex rounded-full px-3 py-1 text-xs font-bold uppercase @statusClasses">
+                                                    @statusText
+                                                </span>
+                                            </td>
+                                            <td class="p-4">
+                                                <div class="flex justify-end gap-2">
+                                                    <a asp-action="GetItemById"
+                                                       asp-controller="Item"
+                                                       asp-route-id="@item.Id"
+                                                       class="inline-flex h-10 w-10 items-center justify-center rounded-lg text-[var(--outline)] transition hover:bg-[var(--surface-variant)] hover:text-[var(--primary)]"
+                                                       title="View">
+                                                        <span class="material-symbols-outlined text-[20px]">visibility</span>
+                                                    </a>
+                                                    <a asp-action="Update"
+                                                       asp-controller="Item"
+                                                       asp-route-id="@item.Id"
+                                                       class="inline-flex h-10 w-10 items-center justify-center rounded-lg text-[var(--outline)] transition hover:bg-[var(--surface-variant)] hover:text-[var(--primary)]"
+                                                       title="Edit">
+                                                        <span class="material-symbols-outlined text-[20px]">edit</span>
+                                                    </a>
+                                                    <a asp-action="Delete"
+                                                       asp-controller="Item"
+                                                       asp-route-id="@item.Id"
+                                                       class="inline-flex h-10 w-10 items-center justify-center rounded-lg text-[var(--outline)] transition hover:bg-[var(--error-container)] hover:text-[var(--on-error-container)]"
+                                                       title="Delete">
+                                                        <span class="material-symbols-outlined text-[20px]">delete</span>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="8" class="px-4 py-16 text-center text-sm text-[var(--on-surface-variant)]">
+                                            Inventory is empty. Add your first product to populate this workspace.
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    @if (Model?.Pagination != null && Model.Pagination.TotalPages > 1)
+                    {
+                        <div class="flex flex-col gap-4 border-t border-[var(--outline-variant)] bg-[var(--surface-container-low)] px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
+                            <span class="text-sm text-[var(--on-surface-variant)]">
+                                Showing @((((Model.Pagination.PageNumber - 1) * Model.Pagination.PageSize) + 1)) to @((((Model.Pagination.PageNumber - 1) * Model.Pagination.PageSize) + pageItems)) of @Model.Pagination.TotalItems entries
+                            </span>
+                            <div class="flex items-center gap-2">
+                                <a class="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--outline-variant)] transition hover:bg-[var(--surface-variant)] @(Model.Pagination.HasPreviousPage ? "text-[var(--on-surface)]" : "pointer-events-none opacity-50")"
+                                   asp-action="Index"
+                                   asp-controller="Item"
+                                   asp-route-pageNumber="@(Model.Pagination.PageNumber - 1)"
+                                   asp-route-pageSize="@Model.Pagination.PageSize">
+                                    <span class="material-symbols-outlined">chevron_left</span>
+                                </a>
+
+                                @for (var pageIndex = 1; pageIndex <= Model.Pagination.TotalPages; pageIndex++)
+                                {
+                                    if (pageIndex == 1 || pageIndex == Model.Pagination.TotalPages || Math.Abs(pageIndex - Model.Pagination.PageNumber) <= 1)
+                                    {
+                                        <a class="inline-flex h-10 min-w-10 items-center justify-center rounded-lg px-3 text-sm font-bold transition @(pageIndex == Model.Pagination.PageNumber ? "bg-[var(--primary)] text-[var(--on-primary)]" : "text-[var(--on-surface)] hover:bg-[var(--surface-variant)]")"
+                                           asp-action="Index"
+                                           asp-controller="Item"
+                                           asp-route-pageNumber="@pageIndex"
+                                           asp-route-pageSize="@Model.Pagination.PageSize">
+                                            @pageIndex
+                                        </a>
+                                    }
+                                    else if (pageIndex == 2 && Model.Pagination.PageNumber > 3 || pageIndex == Model.Pagination.TotalPages - 1 && Model.Pagination.PageNumber < Model.Pagination.TotalPages - 2)
+                                    {
+                                        <span class="px-2 text-[var(--on-surface-variant)]">...</span>
+                                    }
+                                }
+
+                                <a class="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--outline-variant)] transition hover:bg-[var(--surface-variant)] @(Model.Pagination.HasNextPage ? "text-[var(--on-surface)]" : "pointer-events-none opacity-50")"
+                                   asp-action="Index"
+                                   asp-controller="Item"
+                                   asp-route-pageNumber="@(Model.Pagination.PageNumber + 1)"
+                                   asp-route-pageSize="@Model.Pagination.PageSize">
+                                    <span class="material-symbols-outlined">chevron_right</span>
+                                </a>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </section>
 </div>
+
+@section Scripts {
+    <script>
+        (() => {
+            const searchInput = document.getElementById("inventory-search");
+            const rowCheckboxes = Array.from(document.querySelectorAll(".inventory-row-checkbox"));
+            const selectAll = document.getElementById("inventory-select-all");
+            const selectionText = document.getElementById("inventory-selection-text");
+            const resetButton = document.getElementById("inventory-reset-filters");
+            const brandFilters = Array.from(document.querySelectorAll(".inventory-brand-filter"));
+            const stockFilters = Array.from(document.querySelectorAll(".inventory-stock-filter"));
+            const rows = Array.from(document.querySelectorAll(".inventory-row"));
+
+            const updateSelectionState = () => {
+                const selectedCount = rowCheckboxes.filter(checkbox => checkbox.checked).length;
+                selectionText.textContent = `${selectedCount} item${selectedCount === 1 ? "" : "s"} selected`;
+                if (selectAll) {
+                    selectAll.checked = rowCheckboxes.length > 0 && selectedCount === rowCheckboxes.length;
+                }
+            };
+
+            const applyFilters = () => {
+                const search = (searchInput?.value || "").trim().toLowerCase();
+                const activeBrands = brandFilters.filter(filter => filter.checked).map(filter => filter.value.toLowerCase());
+                const activeStock = stockFilters.find(filter => filter.checked)?.value || "all";
+
+                rows.forEach(row => {
+                    const matchesSearch = !search || row.dataset.search.includes(search);
+                    const matchesBrand = activeBrands.length === 0 || activeBrands.includes(row.dataset.brand);
+                    const matchesStock = activeStock === "all" || row.dataset.stockGroup === activeStock;
+                    row.style.display = matchesSearch && matchesBrand && matchesStock ? "" : "none";
+                });
+            };
+
+            searchInput?.addEventListener("input", applyFilters);
+            brandFilters.forEach(filter => filter.addEventListener("change", applyFilters));
+            stockFilters.forEach(filter => filter.addEventListener("change", applyFilters));
+
+            selectAll?.addEventListener("change", event => {
+                const isChecked = event.target.checked;
+                rowCheckboxes.forEach(checkbox => {
+                    checkbox.checked = isChecked;
+                });
+                updateSelectionState();
+            });
+
+            rowCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener("change", updateSelectionState);
+            });
+
+            resetButton?.addEventListener("click", () => {
+                if (searchInput) {
+                    searchInput.value = "";
+                }
+
+                brandFilters.forEach(filter => {
+                    filter.checked = false;
+                });
+
+                const allStockFilter = stockFilters.find(filter => filter.value === "all");
+                if (allStockFilter) {
+                    allStockFilter.checked = true;
+                }
+
+                rowCheckboxes.forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+
+                if (selectAll) {
+                    selectAll.checked = false;
+                }
+
+                updateSelectionState();
+                applyFilters();
+            });
+
+            updateSelectionState();
+            applyFilters();
+        })();
+    </script>
+}

@@ -47,6 +47,11 @@ namespace EMS.Implementation.Respositories
 
         }
 
+        public virtual IQueryable<T> Query<T>() where T : BaseEntity
+        {
+            return _emsContext.Set<T>().AsQueryable();
+        }
+
         public virtual IQueryable<T> QueryWhere<T>(Expression<Func<T, bool>> expression) where T : BaseEntity
         {
             return _emsContext.Set<T>().Where(expression);

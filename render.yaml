@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: ems
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: Storage__UploadsRoot
+        value: /var/data/uploads
+    disk:
+      name: ems-uploads
+      mountPath: /var/data
+      sizeGB: 1

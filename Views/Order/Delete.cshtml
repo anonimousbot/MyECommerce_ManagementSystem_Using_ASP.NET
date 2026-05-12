@@ -36,6 +36,7 @@
             </dl>
 
             <form asp-action="Delete"  asp-controller = "Order" asp-route-id="@Model.Data.Id" method="post" class="mt-4">
+                @Html.AntiForgeryToken()
                
                 <div class="d-flex gap-2">
                     <button type="submit" class="btn btn-danger">

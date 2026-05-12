@@ -47,29 +47,49 @@ namespace EMS.Implementation.Respositories
                .FirstOrDefaultAsync(d => d.Id == id);
         }
 
+        public async Task<Order?> GetOrderByPaymentReferenceAsync(string paymentReference)
+        {
+            return await _emsContext.Set<Order>()
+                .Include(o => o.Customer)
+                .Include(o => o.OrderItem)
+                .ThenInclude(oi => oi.Item)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(o => o.PaymentReference == paymentReference);
+        }
+
         public async Task<int> GetOrderCounts()
         {
             return await _emsContext.Set<Order>()
                  .CountAsync();
         }
-        public async Task<IEnumerable<Order>> GetAllOrders()
+
+        public IQueryable<Order> QueryAllOrders()
         {
-            return await _emsContext.Set<Order>()
+            return _emsContext.Set<Order>()
                 .Include(x => x.OrderItem)
                 .ThenInclude(x => x.Item)
                 .Include(x => x.Customer)
-                .AsNoTracking()
-                .ToListAsync();
+                .AsNoTracking();
+        }
+
+        public IQueryable<Order> QueryOrdersByCustomer(Guid customerId)
+        {
+            return _emsContext.Set<Order>()
+                .Where(o => o.CustomerId == customerId)
+                .Include(o => o.OrderItem)
+                .ThenInclude(i => i.Item)
+                .Include(o => o.Customer)
+                .AsNoTracking();
+        }
+
+        public async Task<IEnumerable<Order>> GetAllOrders()
+        {
+            return await QueryAllOrders().ToListAsync();
         }
 
         public async Task<IEnumerable<Order>> GetOrdersByCustomerAsync(Guid customerId)
         {
-            return await _emsContext.Set<Order>()
-                .Where(o => o.CustomerId == customerId)
-                .Include(o => o.OrderItem)
-                .ThenInclude(i => i.Item)
-                .AsNoTracking()
-                .ToListAsync();
+            return await QueryOrdersByCustomer(customerId).ToListAsync();
         }
 
         public async Task<IReadOnlyList<Order>> GetPendingOrderAsync()

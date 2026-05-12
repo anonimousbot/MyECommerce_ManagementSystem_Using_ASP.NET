@@ -4,7 +4,7 @@
 @model BaseResponse<IEnumerable<EMS.Models.DTOs.Orders.OrderDto>>
 <h2>My Orders</h2>
 
-@if (Model.Data == null)
+@if (Model?.Data == null || !Model.Data.Any())
 {
     <p>You have no orders yet.</p>
 }
@@ -42,4 +42,36 @@ else
             }
         </tbody>
     </table>
+}
+
+@if (Model?.Pagination != null && Model.Pagination.TotalPages > 1)
+{
+    <nav aria-label="My orders pagination" class="mt-4">
+        <ul class="pagination justify-content-center">
+            <li class="page-item @(Model.Pagination.HasPreviousPage ? "" : "disabled")">
+                <a class="page-link"
+                   asp-action="GetOrdersByCustomerId"
+                   asp-controller="Order"
+                   asp-route-pageNumber="@(Model.Pagination.PageNumber - 1)"
+                   asp-route-pageSize="@Model.Pagination.PageSize">Previous</a>
+            </li>
+            @for (var pageIndex = 1; pageIndex <= Model.Pagination.TotalPages; pageIndex++)
+            {
+                <li class="page-item @(pageIndex == Model.Pagination.PageNumber ? "active" : "")">
+                    <a class="page-link"
+                       asp-action="GetOrdersByCustomerId"
+                       asp-controller="Order"
+                       asp-route-pageNumber="@pageIndex"
+                       asp-route-pageSize="@Model.Pagination.PageSize">@pageIndex</a>
+                </li>
+            }
+            <li class="page-item @(Model.Pagination.HasNextPage ? "" : "disabled")">
+                <a class="page-link"
+                   asp-action="GetOrdersByCustomerId"
+                   asp-controller="Order"
+                   asp-route-pageNumber="@(Model.Pagination.PageNumber + 1)"
+                   asp-route-pageSize="@Model.Pagination.PageSize">Next</a>
+            </li>
+        </ul>
+    </nav>
 }

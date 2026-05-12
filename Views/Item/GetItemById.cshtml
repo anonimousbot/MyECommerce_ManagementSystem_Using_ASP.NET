@@ -12,6 +12,12 @@
 <div class="container mt-4">
     <h2 class="mb-3 text-center">Item Details</h2>
     <div class="card shadow-sm p-4">
+        @if (!string.IsNullOrWhiteSpace(Model?.Data?.ImagePath))
+        {
+            <div class="text-center mb-4">
+                <img src="@Model.Data.ImagePath" alt="Item image" style="max-width: 420px; max-height: 420px; object-fit: cover; border-radius: 16px; border: 1px solid #eee;" />
+            </div>
+        }
         <dl class="row">
             <dt class="col-sm-3">Name:</dt>
             <dd class="col-sm-9">@Model.Data.Name</dd>

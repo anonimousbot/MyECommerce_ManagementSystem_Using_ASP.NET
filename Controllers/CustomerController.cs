@@ -2,6 +2,7 @@
 using EMS.Interfaces.Services;
 using EMS.Models.DTOs.Customers;
 using EMS.Models.Enums;
+using EMS.Models.Security;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -18,34 +19,23 @@ namespace EMS.Controllers
         private readonly ILogger<CustomerController> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         private readonly IUserService _userService = userService ?? throw new ArgumentNullException(nameof(userService));
 
-        [Authorize (Roles = "Customer")]
-        public async Task<IActionResult> Index(string searchString)
+        [Authorize(Policy = AuthorizationPolicies.CustomerOnly)]
+        public async Task<IActionResult> Index(string searchString, int pageNumber = 1, int pageSize = 9)
         {
-            var items = await _itemService.GetItemAsync(CancellationToken.None);
-            // SearchBar Code 
-            if (!String.IsNullOrEmpty(searchString))
-            {
-                items.Data = items.Data.Where(n => n.Name.Contains(searchString, StringComparison.OrdinalIgnoreCase))
-                   .ToList();
-                return View(items);
-            }
-            //else if(brand != null)
-            //{
-            //    items.Data = items.Data.Where(b => b.Brand.Equals(brand.ToString(), StringComparison.OrdinalIgnoreCase))
-            //        .ToList();
-            //    return View(items);
-            //}
-             return View(items);
-           
-            
+            ViewBag.CurrentSearch = searchString;
+            var items = await _itemService.GetItemAsync(CancellationToken.None, pageNumber, pageSize, searchString);
+            return View(items);
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public IActionResult Create()
         {
             return View();
         }
         [HttpPost]    
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(CreateCustomerRequestModel model)
         {
             if (!TryValidateModel(model))
@@ -72,30 +62,52 @@ namespace EMS.Controllers
 
         }
         [HttpGet]
-        [Authorize(Roles = "Customer")]
+        [Authorize(Policy = AuthorizationPolicies.CustomerOnly)]
         public async Task<IActionResult> Update(Guid id)
         {
+            var customerCheck = await EnsureCustomerOwnsResourceAsync(id);
+            if (customerCheck is not null)
+            {
+                return customerCheck;
+            }
+
             var getCustomer = await _customerService.GetByIdAsync(id, CancellationToken.None);
-            if (getCustomer == null)
+            if (getCustomer == null || !getCustomer.Status || getCustomer.Data == null)
             {
                 return NotFound();
             }
-            return View();
+
+            return View(new UpdateCustomerRequestModel
+            {
+                FirstName = getCustomer.Data.FirstName,
+                LastName = getCustomer.Data.LastName,
+                Address = getCustomer.Data.Address,
+                PhoneNumber = getCustomer.Data.PhoneNumber,
+                Gender = getCustomer.Data.Gender
+            });
         }
         [HttpPost]
-        [Authorize(Roles = "Customer")]
+        [Authorize(Policy = AuthorizationPolicies.CustomerOnly)]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Update(UpdateCustomerRequestModel model,Guid id)
         {
-            var updateCustomer = await _customerService.UpdateAsync(model, id);
-            if (updateCustomer == null)
+            var customerCheck = await EnsureCustomerOwnsResourceAsync(id);
+            if (customerCheck is not null)
             {
-                return NotFound();
+                return customerCheck;
+            }
+
+            var updateCustomer = await _customerService.UpdateAsync(model, id);
+            if (updateCustomer == null || !updateCustomer.Status)
+            {
+                ModelState.AddModelError(string.Empty, updateCustomer?.Message ?? "Unable to update profile.");
+                return View(model);
             }
             return RedirectToAction("CustomerProfile","Customer");
         }
 
         [HttpGet]
-        [Authorize(Roles = "Customer")]
+        [Authorize(Policy = AuthorizationPolicies.CustomerOnly)]
         public async Task<IActionResult> CustomerProfile()
         {
             var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -117,31 +129,44 @@ namespace EMS.Controllers
             return View(customer);
         }
         [HttpGet]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> GetAllCustomer()
+        [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
+        public async Task<IActionResult> GetAllCustomer(int pageNumber = 1, int pageSize = 10)
         {
-            var getAll = await _customerService.GetCustomerAsync(CancellationToken.None);
+            var getAll = await _customerService.GetCustomerAsync(CancellationToken.None, pageNumber, pageSize);
             if (getAll == null || !getAll.Status)
             {
-                return NotFound();
+                return View(getAll);
             }
             return View(getAll);
         }
         [HttpGet]
-        [Authorize(Roles = "Customer")]
+        [Authorize(Policy = AuthorizationPolicies.CustomerOnly)]
         public async Task<IActionResult> Delete(Guid id)
         {
+            var customerCheck = await EnsureCustomerOwnsResourceAsync(id);
+            if (customerCheck is not null)
+            {
+                return customerCheck;
+            }
+
             var getCustomer = await _customerService.GetByIdAsync(id, CancellationToken.None);
-            if (getCustomer == null)
+            if (getCustomer == null || !getCustomer.Status)
             {
                 return NotFound();
             }
             return View(getCustomer);
         }
         [HttpPost, ActionName ("Delete")]
-        [Authorize(Roles = "Customer")]
+        [Authorize(Policy = AuthorizationPolicies.CustomerOnly)]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed([FromRoute]Guid id)
         {
+            var customerCheck = await EnsureCustomerOwnsResourceAsync(id);
+            if (customerCheck is not null)
+            {
+                return customerCheck;
+            }
+
             var deleteCustomer = await _customerService.DeleteAsync(id);
             if (!deleteCustomer.Status)
             {
@@ -149,7 +174,7 @@ namespace EMS.Controllers
             }
             return RedirectToAction("Logout","User");
         }
-        [Authorize(Roles ="Admin")]
+        [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
         public async Task<IActionResult> GetCustomerById(Guid id)
         {
             var getCustomer = await _customerService.GetByIdAsync(id,CancellationToken.None);
@@ -160,6 +185,27 @@ namespace EMS.Controllers
             return View(getCustomer);
         }
 
+        private async Task<IActionResult?> EnsureCustomerOwnsResourceAsync(Guid customerId)
+        {
+            var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!Guid.TryParse(userIdString, out var userId))
+            {
+                return RedirectToAction("Login", "User");
+            }
+
+            var signedInCustomer = await _customerService.GetByUserIdAsync(userId, CancellationToken.None);
+            if (signedInCustomer == null || !signedInCustomer.Status || signedInCustomer.Data == null)
+            {
+                return NotFound();
+            }
+
+            if (signedInCustomer.Data.Id != customerId)
+            {
+                return Forbid();
+            }
+
+            return null;
+        }
     }
 }
 

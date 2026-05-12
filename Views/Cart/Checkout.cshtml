@@ -1,0 +1,57 @@
+@model EMS.Models.DTOs.Carts.CheckoutCartViewModel
+
+@{
+    ViewBag.Title = "Checkout";
+}
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <h2 class="mb-0"><i class="fas fa-receipt me-2"></i>Checkout</h2>
+    <a asp-action="Index" asp-controller="Cart" class="btn btn-outline-dark">
+        <i class="fas fa-arrow-left me-2"></i>Back to Cart
+    </a>
+</div>
+
+<div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Delivery Details</h5>
+                <form asp-action="Checkout" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-3">
+                        <label class="form-label">Delivery Address</label>
+                        <textarea class="form-control" name="DeliveryAddress" rows="4" required>@Model.DeliveryAddress</textarea>
+                    </div>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-lock me-2"></i>Proceed to Paystack
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Order Summary</h5>
+                @foreach (var item in Model.Cart.Items)
+                {
+                    <div class="d-flex justify-content-between mb-2">
+                        <div>
+                            <div class="fw-bold">@item.Name</div>
+                            <div class="text-muted small">@item.Quantity x ₦@item.UnitPrice.ToString("N2")</div>
+                        </div>
+                        <div class="fw-bold">₦@item.Total.ToString("N2")</div>
+                    </div>
+                }
+                <hr />
+                <div class="d-flex justify-content-between">
+                    <span class="text-muted">Total</span>
+                    <span class="fs-5 fw-bold text-success">₦@Model.Cart.Subtotal.ToString("N2")</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

@@ -7,5 +7,7 @@ namespace EMS.Interfaces.Repositories
     {
         Task<bool> Any(Expression<Func<Item, bool>> expression);
         Task<Item> GetItemsByIdAsync(Guid itemId);
+        Task<bool> TryDecrementStockAsync(Guid itemId, int quantity, CancellationToken cancellationToken);
+        Task IncrementStockAsync(Guid itemId, int quantity, CancellationToken cancellationToken);
     }
 }

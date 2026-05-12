@@ -1,44 +1,156 @@
-﻿@using EMS.Models.Enums
+@using EMS.Models.Enums
 @model EMS.Models.DTOs.Customers.CreateCustomerRequestModel
 
 @{
-
     Layout = "~/Views/Shared/_LoginLayout.cshtml";
-    ViewBag.Title = "Create Customer";
+    ViewBag.Title = "Create Account";
 }
 
+<style>
+    .register-shell {
+        width: 100%;
+        max-width: 1120px;
+        margin: 2rem auto;
+        padding: 0 1.25rem;
+    }
 
-<div class="container mt-4">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow-sm">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h4 class="mb-0">Create Customer</h4>
-                    <a asp-controller="User" asp-action="Login" class="btn btn-sm btn-outline-secondary">Back</a>
-                </div>
+    .register-card {
+        border-radius: 30px;
+        overflow: hidden;
+        border: 1px solid rgba(23, 32, 51, 0.1);
+        box-shadow: 0 30px 80px rgba(23, 32, 51, 0.14);
+        background: rgba(255,255,255,0.94);
+        backdrop-filter: blur(10px);
+    }
 
-                <div class="card-body">
+    .register-panel {
+        background:
+            radial-gradient(circle at top left, rgba(255, 196, 104, 0.26), transparent 28%),
+            linear-gradient(145deg, #0f1727 0%, #162a4f 55%, #0f1f34 100%);
+        color: #fff;
+        padding: 3rem 2.4rem;
+        height: 100%;
+    }
 
-                    <div class="container mt-4">
-                        @if (!string.IsNullOrEmpty(ViewBag.Alert as string))
-                        {
-                            <div id="responseAlert" class="alert alert-@ViewBag.AlertType text-center" role="alert">
-                                @ViewBag.Alert
-                            </div>
-                            <script>
-                                document.addEventListener("DOMContentLoaded", () => {
-                                    setTimeout(() => {
-                                        const alert = document.getElementById('responseAlert');
-                                        if (alert) {
-                                            alert.style.transition = "opacity 0.6s ease";
-                                            alert.style.opacity = 0;
-                                            setTimeout(() => alert.remove(), 600);
-                                        }
-                                    }, 4000);
-                                });
-                            </script>
-                        }
+    .register-panel h1 {
+        font-size: clamp(2rem, 3vw, 2.6rem);
+        font-weight: 900;
+        letter-spacing: -0.04em;
+        margin: 1.25rem 0 0.75rem;
+    }
+
+    .register-panel p {
+        color: rgba(255,255,255,0.76);
+        line-height: 1.7;
+        max-width: 34ch;
+    }
+
+    .register-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.65rem;
+        padding: 0.55rem 0.8rem;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.1);
+        border: 1px solid rgba(255,255,255,0.14);
+        font-weight: 800;
+    }
+
+    .register-perks {
+        display: grid;
+        gap: 0.85rem;
+        margin-top: 1.8rem;
+    }
+
+    .register-perk {
+        display: flex;
+        gap: 0.85rem;
+        align-items: center;
+        color: rgba(255,255,255,0.88);
+        font-weight: 600;
+    }
+
+    .register-perk i {
+        width: 38px;
+        height: 38px;
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255,255,255,0.1);
+        border: 1px solid rgba(255,255,255,0.14);
+    }
+
+    .register-form {
+        padding: 2.5rem 2.2rem;
+        background:
+            linear-gradient(180deg, rgba(255,255,255,0.94), rgba(255,255,255,0.9)),
+            linear-gradient(135deg, rgba(255, 245, 226, 0.62), rgba(255,255,255,0.2));
+    }
+
+    @@media (max-width: 992px) {
+        .register-panel {
+            padding: 2rem 1.5rem;
+        }
+
+        .register-form {
+            padding: 1.8rem 1.4rem;
+        }
+    }
+</style>
+
+<div class="register-shell">
+    <div class="register-card">
+        <div class="row g-0">
+            <div class="col-lg-5 d-none d-lg-block">
+                <div class="register-panel">
+                    <div class="register-badge">
+                        <i class="bi bi-person-plus-fill"></i>
+                        <span>T-Socket account</span>
                     </div>
+                    <h1>Create your customer account</h1>
+                    <p>Join the same polished storefront experience with quick cart access, order tracking, and a cleaner account flow.</p>
+
+                    <div class="register-perks">
+                        <div class="register-perk"><i class="bi bi-bag-check"></i><span>Fast add-to-cart and checkout</span></div>
+                        <div class="register-perk"><i class="bi bi-truck"></i><span>Track orders after payment</span></div>
+                        <div class="register-perk"><i class="bi bi-shield-lock"></i><span>Safer sign-in and account protection</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-7">
+                <div class="register-form">
+                    <div class="page-heading mb-4">
+                        <div>
+                            <h2 class="page-title" style="font-size:1.9rem;">Create account</h2>
+                            <p class="page-subtitle">Set up your details once and keep the rest of your shopping flow simple.</p>
+                        </div>
+                        <div class="page-action-row">
+                            <a asp-controller="User" asp-action="Login" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>Back to login
+                            </a>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(ViewBag.Alert as string))
+                    {
+                        <div id="responseAlert" class="alert alert-@ViewBag.AlertType text-center" role="alert">
+                            @ViewBag.Alert
+                        </div>
+                        <script>
+                            document.addEventListener("DOMContentLoaded", () => {
+                                setTimeout(() => {
+                                    const alert = document.getElementById('responseAlert');
+                                    if (alert) {
+                                        alert.style.transition = "opacity 0.6s ease";
+                                        alert.style.opacity = 0;
+                                        setTimeout(() => alert.remove(), 600);
+                                    }
+                                }, 4000);
+                            });
+                        </script>
+                    }
 
                     <form asp-controller="Customer" asp-action="Create" method="post" novalidate>
                         @Html.AntiForgeryToken()
@@ -50,12 +162,10 @@
                                 <input asp-for="FirstName" class="form-control" />
                                 <span asp-validation-for="FirstName" class="text-danger"></span>
                             </div>
-
                             <div class="col-md-6 mb-3">
                                 <label asp-for="LastName" class="form-label"></label>
                                 <input asp-for="LastName" class="form-control" />
                                 <span asp-validation-for="LastName" class="text-danger"></span>
-                               
                             </div>
                         </div>
 
@@ -63,7 +173,6 @@
                             <label asp-for="Email" class="form-label"></label>
                             <input asp-for="Email" class="form-control" />
                             <span asp-validation-for="Email" class="text-danger"></span>
-                          
                         </div>
 
                         <div class="row">
@@ -71,9 +180,7 @@
                                 <label asp-for="PasswordHash" class="form-label">Password</label>
                                 <input asp-for="PasswordHash" type="password" class="form-control" />
                                 <span asp-validation-for="PasswordHash" class="text-danger"></span>
-                               
                             </div>
-
                             <div class="col-md-6 mb-3">
                                 <label asp-for="ConfirmPassword" class="form-label"></label>
                                 <input asp-for="ConfirmPassword" type="password" class="form-control" />
@@ -84,37 +191,38 @@
                         <div class="row">
                             <div class="col-md-4 mb-3">
                                 <label asp-for="DateOfBirth" class="form-label"></label>
-                                <input asp-for="DateOfBirth" type="date" class="form-control "min="1900-01-01"
-                                max="@DateTime.Today.AddYears(-10).ToString("yyyy-MM-dd")" onkeydown="return false" onkeypress="return false" onpaste/>
+                                <input asp-for="DateOfBirth"
+                                       type="date"
+                                       class="form-control"
+                                       min="1900-01-01"
+                                       max="@DateTime.Today.AddYears(-10).ToString("yyyy-MM-dd")"
+                                       onkeydown="return false"
+                                       onkeypress="return false"
+                                       onpaste />
                                 <span asp-validation-for="DateOfBirth" class="text-danger"></span>
-                               
                             </div>
 
                             <div class="col-md-4 mb-3">
                                 <label asp-for="Gender" class="form-label"></label>
-                                <select asp-for="Gender" asp-items="@Html.GetEnumSelectList(typeof(Gender))" required>
-                                </select>
-                               
+                                <select asp-for="Gender" asp-items="@Html.GetEnumSelectList(typeof(Gender))" class="form-select" required></select>
                             </div>
 
                             <div class="col-md-4 mb-3">
                                 <label asp-for="PhoneNumber" class="form-label"></label>
-                                <input asp-for="PhoneNumber" class="form-control" inputmode="numeric" pattern="[0-9]*" maxlength="11"/>
+                                <input asp-for="PhoneNumber" class="form-control" inputmode="numeric" pattern="[0-9]*" maxlength="11" />
                                 <span asp-validation-for="PhoneNumber" class="text-danger"></span>
-                                
                             </div>
                         </div>
 
-                        <div class="mb-3">
+                        <div class="mb-4">
                             <label asp-for="Address" class="form-label"></label>
-                            <textarea asp-for="Address" class="form-control" rows="2"></textarea>
+                            <textarea asp-for="Address" class="form-control" rows="3"></textarea>
                             <span asp-validation-for="Address" class="text-danger"></span>
-                           
                         </div>
 
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-primary">Create</button>
-                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-person-check me-2"></i>Create account
+                        </button>
                     </form>
                 </div>
             </div>

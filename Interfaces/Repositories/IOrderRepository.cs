@@ -8,6 +8,9 @@ namespace EMS.Interfaces.Repositories
     {
         Task<int> GetOrderCounts();
         Task<Order> GetOrderById(Guid id);
+        Task<Order?> GetOrderByPaymentReferenceAsync(string paymentReference);
+        IQueryable<Order> QueryAllOrders();
+        IQueryable<Order> QueryOrdersByCustomer(Guid customerId);
         Task<IEnumerable<Order>> GetOrdersByCustomerAsync(Guid customerId);
         Task<IEnumerable<Order>> GetAllOrders();
         Task<IReadOnlyList<Order>> GetPendingOrderAsync();

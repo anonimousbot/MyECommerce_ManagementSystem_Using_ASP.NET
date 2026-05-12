@@ -10,6 +10,7 @@ namespace EMS.Models.Entities
         public  string DeliveryAddress {  get; set; }
         public decimal Amount { get; set; }
         public Status OrderStatus { get; set; }
+        public string? PaymentReference { get; set; }
 
         // Colection Of Order Item
         public ICollection<OrderItem>? OrderItem { get; set; } = [];

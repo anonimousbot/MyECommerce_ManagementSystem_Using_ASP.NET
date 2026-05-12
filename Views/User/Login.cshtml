@@ -1,105 +1,156 @@
-﻿@model EMS.Models.DTOs.Users.LoginRequestModel
+@model EMS.Models.DTOs.Users.LoginRequestModel
 
 @{
     Layout = "~/Views/Shared/_LoginLayout.cshtml";
     ViewBag.Title = "Sign In";
+    var returnUrl = (string?)ViewBag.ReturnUrl ?? string.Empty;
 }
 
 <style>
     :root {
-        --primary-color: #667eea;
-        --primary-dark: #5568d3;
-        --secondary-color: #764ba2;
-        --danger-color: #ea4335;
-        --success-color: #34a853;
-        --text-dark: #2d3748;
-        --text-light: #718096;
-        --border-color: #e2e8f0;
-        --bg-light: #f7fafc;
+        --brand: #6c2bd9;
+        --brand-strong: #5521b5;
+        --brand-soft: #f3e8ff;
+        --ink: #172033;
+        --muted: #6b7280;
+        --border: rgba(23, 32, 51, 0.12);
+        --surface: rgba(255, 255, 255, 0.92);
     }
 
     body {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         min-height: 100vh;
-        display: flex;
-        align-items: center;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        padding: 2rem 0;
     }
 
     .login-container {
         width: 100%;
-        max-width: 450px;
+        max-width: 1080px;
         margin: 2rem auto;
-        padding: 0 1rem;
+        padding: 0 1.25rem;
     }
 
     .login-card {
-        background: white;
-        border-radius: 20px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        background: var(--surface);
+        border-radius: 30px;
+        border: 1px solid var(--border);
+        box-shadow: 0 32px 90px rgba(23, 32, 51, 0.14);
+        backdrop-filter: blur(14px);
         overflow: hidden;
-        animation: slideUp 0.5s ease-out;
+        animation: slideUp 0.55s ease-out;
     }
 
     @@keyframes slideUp {
-        from {
-            opacity: 0;
-            transform: translateY(30px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 
-    .login-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    .panel-left {
+        background:
+            radial-gradient(circle at 20% 18%, rgba(196, 181, 253, 0.24), transparent 24%),
+            radial-gradient(circle at 82% 78%, rgba(124, 58, 237, 0.26), transparent 28%),
+            linear-gradient(145deg, #1e0744 0%, #3b0f9e 56%, #1b0f31 100%);
         color: white;
-        padding: 2.5rem 2rem;
-        text-align: center;
+        padding: 3rem 2.6rem;
+        min-height: 520px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
     }
 
-    .login-header h2 {
-        margin: 0;
-        font-size: 2rem;
-        font-weight: 700;
-        letter-spacing: -0.5px;
+    .brand-mark {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
     }
 
-    .login-header p {
-        margin: 0.5rem 0 0;
-        opacity: 0.95;
-        font-size: 0.95rem;
+    .brand-badge {
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #c4b5fd, var(--brand));
+        color: #ffffff;
+        font-weight: 900;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 16px 36px rgba(108, 43, 217, 0.28);
     }
 
-    .login-body {
-        padding: 2rem;
+    .panel-left h1 {
+        font-size: 2.35rem;
+        font-weight: 900;
+        letter-spacing: -0.03em;
+        margin-top: 1.4rem;
+        max-width: 10ch;
     }
 
-    .form-floating {
-        position: relative;
+    .panel-left p {
+        color: rgba(255,255,255,0.78);
+        margin: 0.85rem 0 0 0;
+        max-width: 34ch;
+        line-height: 1.7;
+    }
+
+    .perk {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 0;
+        color: rgba(255,255,255,0.88);
+        font-weight: 600;
+    }
+
+    .perk i {
+        width: 40px;
+        height: 40px;
+        border-radius: 14px;
+        background: rgba(255,255,255,0.10);
+        border: 1px solid rgba(255,255,255,0.12);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+    }
+
+    .panel-right {
+        padding: 2.75rem 2.4rem;
+        background:
+            linear-gradient(180deg, rgba(255,255,255,0.94), rgba(255,255,255,0.90)),
+            linear-gradient(135deg, rgba(243, 232, 255, 0.66), rgba(255,255,255,0.30));
+    }
+
+    .title {
+        font-size: 1.8rem;
+        font-weight: 900;
+        letter-spacing: -0.02em;
+        margin-bottom: 0.25rem;
+        color: var(--ink);
+    }
+
+    .subtitle {
+        color: var(--muted);
         margin-bottom: 1.5rem;
     }
 
     .form-control {
-        border: 2px solid var(--border-color);
-        border-radius: 10px;
+        border: 1.5px solid var(--border);
+        border-radius: 16px;
         padding: 1rem;
         font-size: 1rem;
         transition: all 0.3s ease;
-        background: var(--bg-light);
+        background: rgba(255,255,255,0.96);
     }
 
     .form-control:focus {
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
-        background: white;
+        border-color: rgba(108, 43, 217, 0.58);
+        box-shadow: 0 0 0 4px rgba(108, 43, 217, 0.12);
+        background: #fff;
         outline: none;
     }
 
     .form-label {
-        font-weight: 600;
-        color: var(--text-dark);
+        font-weight: 800;
+        color: var(--ink);
         margin-bottom: 0.5rem;
         display: block;
         font-size: 0.9rem;
@@ -109,38 +160,68 @@
         position: relative;
     }
 
-    .input-group-icon i {
+    .field-icon {
         position: absolute;
         left: 1rem;
         top: 50%;
         transform: translateY(-50%);
-        color: var(--text-light);
+        color: var(--muted);
         z-index: 5;
+        pointer-events: none;
     }
 
     .input-group-icon .form-control {
         padding-left: 2.75rem;
+        padding-right: 3.5rem;
+    }
+
+    .toggle-pass {
+        position: absolute;
+        right: 0.65rem;
+        top: 50%;
+        transform: translateY(-50%);
+        border: 0;
+        background: transparent;
+        z-index: 6;
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        color: var(--muted);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s ease, color 0.2s ease;
+        padding: 0;
+    }
+
+    .toggle-pass:hover {
+        background: rgba(23, 32, 51, 0.06);
+        color: var(--ink);
+    }
+
+    .toggle-pass i {
+        position: static;
+        transform: none;
+        color: inherit;
+        pointer-events: none;
     }
 
     .btn-primary {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #7c3aed, var(--brand-strong));
         border: none;
-        border-radius: 10px;
+        border-radius: 16px;
         padding: 1rem;
         font-size: 1rem;
-        font-weight: 600;
+        font-weight: 900;
         width: 100%;
         transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        color: #ffffff;
+        box-shadow: 0 16px 38px rgba(108, 43, 217, 0.24);
     }
 
     .btn-primary:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
-    }
-
-    .btn-primary:active {
-        transform: translateY(0);
+        box-shadow: 0 20px 44px rgba(108, 43, 217, 0.34);
     }
 
     .divider {
@@ -154,25 +235,25 @@
     .divider::after {
         content: '';
         flex: 1;
-        border-bottom: 1px solid var(--border-color);
+        border-bottom: 1px solid var(--border);
     }
 
     .divider span {
         padding: 0 1rem;
-        color: var(--text-light);
+        color: var(--muted);
         font-size: 0.875rem;
-        font-weight: 500;
+        font-weight: 800;
     }
 
     .btn-google {
-        background: white;
-        border: 2px solid var(--border-color);
-        border-radius: 10px;
-        padding: 0.875rem;
+        background: rgba(255,255,255,0.96);
+        border: 1.5px solid var(--border);
+        border-radius: 16px;
+        padding: 0.95rem;
         font-size: 1rem;
-        font-weight: 600;
+        font-weight: 900;
         width: 100%;
-        color: var(--text-dark);
+        color: var(--ink);
         transition: all 0.3s ease;
         display: flex;
         align-items: center;
@@ -181,66 +262,44 @@
     }
 
     .btn-google:hover {
-        border-color: var(--danger-color);
-        background: #fff8f7;
+        border-color: rgba(108, 43, 217, 0.28);
+        background: var(--brand-soft);
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(234, 67, 53, 0.2);
+        box-shadow: 0 12px 28px rgba(23, 32, 51, 0.10);
         text-decoration: none;
-        color: var(--text-dark);
-    }
-
-    .btn-google img {
-        width: 20px;
-        height: 20px;
+        color: var(--ink);
     }
 
     .alert {
-        border-radius: 10px;
+        border-radius: 14px;
         border: none;
         padding: 1rem;
         margin-bottom: 1.5rem;
-        animation: shake 0.5s ease-out;
+        animation: shake 0.45s ease-out;
     }
 
     @@keyframes shake {
         0%, 100% { transform: translateX(0); }
-        25% { transform: translateX(-10px); }
-        75% { transform: translateX(10px); }
-    }
-
-    .alert-danger {
-        background: #fee;
-        color: #c33;
-        border-left: 4px solid #c33;
-    }
-
-    .alert-warning {
-        background: #fff3cd;
-        color: #856404;
-        border-left: 4px solid #ffc107;
-    }
-
-    .alert-link {
-        color: inherit;
-        font-weight: 700;
-        text-decoration: underline;
+        25% { transform: translateX(-8px); }
+        75% { transform: translateX(8px); }
     }
 
     .create-account-link {
         text-align: center;
         margin-top: 1.5rem;
-        color: var(--text-light);
+        color: var(--muted);
+        font-size: 0.9rem;
     }
 
     .create-account-link a {
-        color: var(--primary-color);
-        font-weight: 600;
+        color: var(--ink);
+        font-weight: 900;
         text-decoration: none;
         transition: color 0.3s ease;
     }
 
     .create-account-link a:hover {
-        color: var(--primary-dark);
+        color: var(--brand-strong);
         text-decoration: underline;
     }
 
@@ -257,112 +316,115 @@
     }
 
     .forgot-password a {
-        color: var(--primary-color);
+        color: var(--muted);
         text-decoration: none;
         font-size: 0.875rem;
-        font-weight: 500;
+        font-weight: 800;
         transition: color 0.3s ease;
     }
 
     .forgot-password a:hover {
-        color: var(--primary-dark);
+        color: var(--ink);
         text-decoration: underline;
     }
 
     @@media (max-width: 576px) {
-        .login-header h2 {
-            font-size: 1.5rem;
-        }
-
-        .login-body {
-            padding: 1.5rem;
-        }
+        .panel-right { padding: 1.75rem 1.5rem; }
     }
 </style>
 
 <div class="login-container">
     <div class="login-card">
-        <div class="login-header">
-            <h2>🔒 T-Socket Gadgets</h2>
-            <p>Welcome back! Please login to your account</p>
-        </div>
+        <div class="row g-0">
+            <div class="col-lg-6 d-none d-lg-block">
+                <div class="panel-left">
+                    <div>
+                        <div class="brand-mark">
+                            <span class="brand-badge">TS</span>
+                            <div>
+                                <div class="fw-bold">T-Socket Gadgets</div>
+                                <div class="small" style="color: rgba(255,255,255,0.75);">Simple, trusted shopping</div>
+                            </div>
+                        </div>
 
-        <div class="login-body">
-            @if (ViewBag.ErrorMessage != null)
-            {
-                <div class="alert alert-danger">
-                    <i class="fas fa-exclamation-circle"></i> @ViewBag.ErrorMessage
-                </div>
-            }
+                        <h1>Sign in and pick up where you left off.</h1>
+                        @* <p>Use the same purple T-Socket look from the storefront, then move straight into cart, checkout, and order tracking.</p> *@
 
-            @if (ViewBag.ShowResendLink == true)
-            {
-                <div class="alert alert-warning">
-                    <i class="fas fa-envelope"></i> Didn't receive the email?
-                    <a href="@Url.Action("ResendVerification", "User")" class="alert-link">
-                        Resend verification email
-                    </a>
-                </div>
-            }
-
-            <form asp-controller="User" asp-action="Login" method="post" novalidate>
-                @Html.AntiForgeryToken()
-
-                <div class="mb-3">
-                    <label asp-for="Email" class="form-label">
-                        <i class="fas fa-envelope"></i> Email Address
-                    </label>
-                    <div class="input-group-icon">
-                        <i class="fas fa-envelope"></i>
-                        <input asp-for="Email"
-                               class="form-control"
-                               placeholder="Enter your email"
-                               autocomplete="email" />
+                        <div class="mt-4">
+                            <div class="perk"><i class="bi bi-shield-lock"></i> Secure customer accounts</div>
+                            <div class="perk"><i class="bi bi-truck"></i> Delivery tracking</div>
+                            <div class="perk"><i class="bi bi-bag-check"></i> Order history and receipts</div>
+                        </div>
                     </div>
-                    <span asp-validation-for="Email" class="text-danger"></span>
-                </div>
 
-                <div class="mb-3">
-                    <label asp-for="Password" class="form-label">
-                        <i class="fas fa-lock"></i> Password
-                    </label>
-                    <div class="input-group-icon">
-                        <i class="fas fa-lock"></i>
-                        <input asp-for="Password"
-                               type="password"
-                               class="form-control"
-                               placeholder="Enter your password"
-                               autocomplete="current-password" />
+                    <div class="small" style="color: rgba(255,255,255,0.70);">
+                        Need an account? <a class="text-white fw-bold" asp-controller="Customer" asp-action="Create">Create one</a>
                     </div>
-                    <span asp-validation-for="Password" class="text-danger"></span>
                 </div>
-
-                <div class="forgot-password">
-                    <a href="#">Forgot Password?</a>
-                </div>
-
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-sign-in-alt"></i> Sign In
-                </button>
-            </form>
-
-            <div class="divider">
-                <span>OR CONTINUE WITH</span>
             </div>
 
-            <a asp-controller="User" asp-action="GoogleLogin" class="btn-google">
-                <svg width="20" height="20" viewBox="0 0 48 48">
-                    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
-                    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
-                    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
-                    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
-                </svg>
-                Continue with Google
-            </a>
+            <div class="col-lg-6">
+                <div class="panel-right">
+                    <div class="title">Welcome back</div>
+                    <div class="subtitle">Sign in to continue to T-Socket Gadgets.</div>
 
-            <div class="create-account-link">
-                Don't have an account?
-                <a asp-controller="Customer" asp-action="Create">Create an account</a>
+                    @if (ViewBag.ErrorMessage != null)
+                    {
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle"></i> @ViewBag.ErrorMessage
+                        </div>
+                    }
+
+                    <form asp-controller="User" asp-action="Login" asp-route-returnUrl="@returnUrl" method="post" novalidate>
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="returnUrl" value="@returnUrl" />
+
+                        <div class="mb-3">
+                            <label asp-for="Email" class="form-label">Email address</label>
+                            <div class="input-group-icon">
+                                <i class="bi bi-envelope field-icon"></i>
+                                <input asp-for="Email" class="form-control" placeholder="name@example.com" autocomplete="email" />
+                            </div>
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-2">
+                            <label asp-for="Password" class="form-label">Password</label>
+                            <div class="input-group-icon">
+                                <i class="bi bi-lock field-icon"></i>
+                                <input asp-for="Password" id="password-input" type="password" class="form-control" placeholder="Enter your password" autocomplete="current-password" />
+                                <button type="button" class="toggle-pass" id="toggle-pass" aria-label="Toggle password visibility">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                            <span asp-validation-for="Password" class="text-danger"></span>
+                        </div>
+
+                        <div class="forgot-password">
+                            <a href="#">Forgot Password?</a>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Continue</button>
+                    </form>
+
+                    <div class="divider">
+                        <span>OR</span>
+                    </div>
+
+                    <a asp-controller="User" asp-action="GoogleLogin" asp-route-returnUrl="@returnUrl" class="btn-google">
+                        <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true">
+                            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+                            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+                            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+                            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+                        </svg>
+                        Continue with Google
+                    </a>
+
+                    <div class="create-account-link">
+                        Don&apos;t have an account? <a asp-controller="Customer" asp-action="Create">Create one</a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -370,4 +432,20 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            const input = document.getElementById('password-input');
+            const button = document.getElementById('toggle-pass');
+            if (!input || !button) return;
+
+            button.addEventListener('click', function () {
+                const isHidden = input.getAttribute('type') === 'password';
+                input.setAttribute('type', isHidden ? 'text' : 'password');
+                const icon = button.querySelector('i');
+                if (icon) {
+                    icon.className = isHidden ? 'bi bi-eye-slash' : 'bi bi-eye';
+                }
+            });
+        })();
+    </script>
 }

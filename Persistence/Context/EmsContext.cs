@@ -59,6 +59,28 @@ namespace EMS.Persistence.Context
                 .HasForeignKey(c => c.CustomerId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            builder.Entity<Customer>()
+                .HasOne(c => c.Cart)
+                .WithOne(c => c.Customer)
+                .HasForeignKey<Cart>(c => c.CustomerId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<CartItem>()
+                .HasOne(ci => ci.Cart)
+                .WithMany(c => c.Items)
+                .HasForeignKey(ci => ci.CartId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<CartItem>()
+                .HasOne(ci => ci.Item)
+                .WithMany()
+                .HasForeignKey(ci => ci.ItemId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<CartItem>()
+                .HasIndex(ci => new { ci.CartId, ci.ItemId })
+                .IsUnique();
+
             builder.Entity<OrderItem>()
                 .HasOne(o => o.Order)
                 .WithMany(o => o.OrderItem)
@@ -70,6 +92,27 @@ namespace EMS.Persistence.Context
                 .WithMany(o => o.OrderItem)
                 .HasForeignKey(i => i.ItemId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<Order>()
+                .HasIndex(o => o.PaymentReference)
+                .IsUnique();
+
+            builder.Entity<Payment>()
+                .HasOne(p => p.Order)
+                .WithOne()
+                .HasForeignKey<Payment>(p => p.OrderId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<Payment>()
+                .HasOne(p => p.Customer)
+                .WithMany()
+                .HasForeignKey(p => p.CustomerId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<Payment>()
+                .HasIndex(p => p.Reference)
+                .IsUnique();
 
             base.OnModelCreating(builder);
 
@@ -132,10 +175,10 @@ namespace EMS.Persistence.Context
             {
                 new Role
                 {
-                    Id = Guid.NewGuid(),
+                    Id = new Guid("67cb1ae1-91ab-480f-a236-d7f676f7ab99"),
                     Name = "Customer",
                     Description = "Can Order Items from the Store",
-                    DateCreated = DateTime.UtcNow,
+                    DateCreated = new DateTime(2026, 4, 1, 13, 15, 59, 214, DateTimeKind.Utc).AddTicks(1295),
                 },
               
             };
@@ -150,6 +193,9 @@ namespace EMS.Persistence.Context
         DbSet<Order> Orders => Set<Order>();
         DbSet<OrderItem> OrderItems => Set<OrderItem>();
         DbSet<Role> Roles => Set<Role>();
+        DbSet<Cart> Carts => Set<Cart>();
+        DbSet<CartItem> CartItems => Set<CartItem>();
+        DbSet<Payment> Payments => Set<Payment>();
 
     }
 }

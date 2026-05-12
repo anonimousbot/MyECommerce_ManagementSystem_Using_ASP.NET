@@ -1,0 +1,542 @@
+@using EMS.Models.DTOs
+@using EMS.Models.DTOs.Items
+@model BaseResponse<IEnumerable<ItemDto>>
+
+@{
+    Layout = "~/Views/Shared/_StoreLayout.cshtml";
+    ViewBag.Title = "T-Socket Gadgets | Shop";
+    var q = (string?)ViewBag.Query ?? string.Empty;
+    var items = Model?.Data?.ToList() ?? new List<ItemDto>();
+    var pagination = Model?.Pagination;
+    var currentPage = pagination?.PageNumber ?? 1;
+    var pageSize = pagination?.PageSize ?? 12;
+    var totalItems = pagination?.TotalItems ?? items.Count;
+    var returnUrl = $"{ViewContext.HttpContext.Request.Path}{ViewContext.HttpContext.Request.QueryString}";
+    var isCustomer = User?.IsInRole("Customer") ?? false;
+    var isAuthenticated = User?.Identity?.IsAuthenticated ?? false;
+}
+
+<style>
+:root {
+    --p:#6c2bd9; --p-dk:#5521b5; --p-lt:#7c3aed;
+    --p-a10:rgba(108,43,217,.10); --p-a20:rgba(108,43,217,.20); --p-a30:rgba(108,43,217,.30);
+    --surf:#fff; --bg:#f4f5f7; --border:rgba(15,23,42,.09);
+    --ink:#0f172a; --ink2:#1e293b; --muted:#64748b; --light:#94a3b8;
+    --green:#16a34a; --red:#dc2626; --amber:#f59e0b;
+    --r8:8px; --r12:12px; --r16:16px; --r20:20px; --rpill:999px;
+    --sh-card:0 2px 12px rgba(15,23,42,.07);
+    --sh-hover:0 16px 48px rgba(108,43,217,.18),0 4px 12px rgba(15,23,42,.08);
+    --ease:.22s cubic-bezier(.4,0,.2,1);
+}
+
+/* ── Page load fade-in ── */
+@@keyframes fadeUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:none} }
+@@keyframes shimmer { from{background-position:-600px 0} to{background-position:600px 0} }
+@@keyframes gradShift { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+@@keyframes starPop { 0%{transform:scale(0)} 70%{transform:scale(1.3)} 100%{transform:scale(1)} }
+
+.fade-up { opacity:0; transform:translateY(24px); transition:opacity .6s var(--ease),transform .6s var(--ease); }
+.fade-up.in { opacity:1; transform:none; }
+
+/* ── Hero ── */
+.hero {
+    position:relative; border-radius:var(--r20); overflow:hidden;
+    padding:3.5rem 2.5rem; margin-bottom:2rem;
+    background: linear-gradient(-45deg,#1e0744,#3b0f9e,#6c2bd9,#7c3aed,#a855f7,#6c2bd9);
+    background-size:400% 400%;
+    animation: gradShift 8s ease infinite;
+    box-shadow: 0 24px 64px rgba(108,43,217,.35);
+}
+.hero::before {
+    content:''; position:absolute; inset:0;
+    background:radial-gradient(ellipse at 70% 50%,rgba(255,255,255,.08) 0%,transparent 70%);
+}
+.hero-chip {
+    display:inline-flex; align-items:center; gap:6px;
+    background:rgba(255,255,255,.15); backdrop-filter:blur(8px);
+    border:1px solid rgba(255,255,255,.25); border-radius:var(--rpill);
+    padding:5px 14px; font-size:12px; font-weight:600; color:#fff;
+    margin-bottom:1.25rem;
+}
+.hero h1 {
+    font-size:clamp(1.8rem,4vw,2.9rem); font-weight:900;
+    letter-spacing:-.04em; line-height:1.1; color:#fff; margin-bottom:.75rem;
+}
+.hero h1 em { font-style:normal; color:#c4b5fd; }
+.hero p { font-size:0; color:rgba(255,255,255,.78); max-width:480px; line-height:1.7; margin-bottom:1.75rem; }
+.hero p::before {
+    content:'Browse standout gadgets and daily tech essentials. Sign in only when you are ready to checkout.';
+    display:block;
+    font-size:15px;
+}
+.hero-actions { display:flex; flex-wrap:wrap; gap:.6rem; }
+
+.btn-hero-ghost {
+    display:inline-flex; align-items:center; gap:7px;
+    background:rgba(255,255,255,.15); backdrop-filter:blur(8px);
+    border:1.5px solid rgba(255,255,255,.35); color:#fff;
+    padding:11px 22px; border-radius:var(--r12); font-size:14px; font-weight:700;
+    text-decoration:none; cursor:pointer; transition:all var(--ease);
+}
+.btn-hero-ghost:hover { background:rgba(255,255,255,.28); color:#fff; transform:translateY(-2px); }
+
+.btn-hero-white {
+    display:inline-flex; align-items:center; gap:7px;
+    background:#fff; color:var(--p); border:1.5px solid transparent;
+    padding:11px 22px; border-radius:var(--r12); font-size:14px; font-weight:800;
+    text-decoration:none; cursor:pointer; transition:all var(--ease);
+    box-shadow:0 4px 20px rgba(0,0,0,.18);
+}
+.btn-hero-white:hover { background:#f5f3ff; color:var(--p-dk); transform:translateY(-2px); box-shadow:0 8px 28px rgba(0,0,0,.2); }
+
+/* Hero KPI cards */
+.hero-kpis { display:flex; flex-wrap:wrap; gap:1rem; margin-top:2rem; }
+.hero-kpi {
+    flex:1; min-width:130px; background:rgba(255,255,255,.12); backdrop-filter:blur(8px);
+    border:1px solid rgba(255,255,255,.2); border-radius:var(--r16);
+    padding:1rem 1.25rem; color:#fff;
+}
+.hero-kpi-label { font-size:10.5px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:rgba(255,255,255,.65); margin-bottom:4px; }
+.hero-kpi-value { font-size:1.65rem; font-weight:900; letter-spacing:-.04em; line-height:1; }
+
+/* ── Filter Bar ── */
+.filter-bar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.75rem; margin-bottom:1.5rem; padding-bottom:1.25rem; border-bottom:1px solid var(--border); }
+.filter-left { display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; }
+.filter-title { font-size:1.05rem; font-weight:800; letter-spacing:-.025em; }
+.filter-count { font-size:12px; font-weight:700; padding:4px 12px; border-radius:var(--rpill); background:var(--p-a10); border:1px solid var(--p-a20); color:var(--p); }
+.filter-chips { display:flex; flex-wrap:wrap; gap:.45rem; }
+.chip {
+    display:inline-flex; align-items:center; gap:5px;
+    padding:6px 14px; border-radius:var(--rpill); font-size:12.5px; font-weight:600;
+    border:1.5px solid var(--border); background:var(--surf); color:var(--ink2);
+    cursor:pointer; transition:all var(--ease); text-decoration:none;
+}
+.chip:hover, .chip.active { background:var(--p); border-color:var(--p); color:#fff; }
+
+/* ── Alert ── */
+.ts-alert { display:flex; align-items:center; gap:10px; border-radius:var(--r12); padding:.9rem 1.1rem; font-size:14px; font-weight:600; margin-bottom:1.25rem; border:1px solid; }
+.ts-alert-ok  { background:rgba(22,163,74,.07); border-color:rgba(22,163,74,.25); color:#15803d; }
+.ts-alert-err { background:rgba(220,38,38,.07); border-color:rgba(220,38,38,.25); color:#b91c1c; }
+
+/* ── Product Grid ── */
+.product-grid {
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:1.25rem;
+}
+@@media(max-width:1100px){ .product-grid{grid-template-columns:repeat(3,1fr);} }
+@@media(max-width:768px) { .product-grid{grid-template-columns:repeat(2,1fr);gap:.875rem;} }
+@@media(max-width:420px) { .product-grid{grid-template-columns:1fr;} }
+
+/* ── Product Card ── */
+.pcard {
+    background:var(--surf); border:1px solid var(--border); border-radius:var(--r16);
+    overflow:hidden; display:flex; flex-direction:column;
+    box-shadow:var(--sh-card);
+    transition:transform var(--ease),box-shadow var(--ease),border-color var(--ease);
+}
+.pcard:hover { transform:translateY(-6px) scale(1.005); box-shadow:var(--sh-hover); border-color:var(--p-a20); }
+
+.pcard-thumb {
+    aspect-ratio:1/1; overflow:hidden; background:#f8f7ff;
+    display:flex; align-items:center; justify-content:center; position:relative;
+}
+.pcard-thumb a { display:block; width:100%; height:100%; }
+.pcard-thumb img { width:100%; height:100%; object-fit:cover; transition:transform .45s var(--ease); }
+.pcard:hover .pcard-thumb img { transform:scale(1.08); }
+.pcard-no-img { display:flex; flex-direction:column; align-items:center; gap:6px; color:var(--light); }
+.pcard-no-img i { font-size:2.5rem; }
+.pcard-no-img span { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; }
+
+.stock-badge {
+    position:absolute; top:10px; right:10px; padding:3px 10px;
+    border-radius:var(--rpill); font-size:10px; font-weight:700;
+    letter-spacing:.04em; text-transform:uppercase;
+}
+.stock-ok  { background:rgba(22,163,74,.1); border:1px solid rgba(22,163,74,.25); color:var(--green); }
+.stock-low { background:rgba(220,38,38,.09); border:1px solid rgba(220,38,38,.22); color:var(--red); }
+
+.pcard-body { padding:.9rem 1rem 1.1rem; display:flex; flex-direction:column; flex:1; gap:.35rem; }
+.pcard-brand { font-size:10.5px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--p); }
+.pcard-name { font-size:13.5px; font-weight:700; color:var(--ink); line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; min-height:2.8em; }
+.pcard-stars { display:flex; align-items:center; gap:3px; }
+.pcard-stars .star { font-size:12px; }
+.pcard-stars .star.filled { color:var(--amber); }
+.pcard-stars .star.empty  { color:#e2e8f0; }
+.pcard-stars span { font-size:11px; font-weight:600; color:var(--muted); margin-left:4px; }
+.pcard-price { font-size:1.1rem; font-weight:900; letter-spacing:-.03em; color:var(--ink); margin-top:.15rem; }
+.pcard-divider { height:1px; background:rgba(15,23,42,.06); margin:.5rem 0; }
+.pcard-actions { display:flex; flex-direction:column; gap:.4rem; margin-top:auto; }
+.pcard-actions form { margin:0; }
+
+/* Buttons */
+.btn-ts {
+    display:inline-flex; align-items:center; justify-content:center; gap:6px;
+    width:100%; padding:10px 14px; border-radius:var(--r8);
+    font-size:13px; font-weight:700; font-family:inherit;
+    border:1.5px solid transparent; cursor:pointer; text-decoration:none;
+    transition:all var(--ease); position:relative; overflow:hidden;
+}
+.btn-ts::after {
+    content:''; position:absolute; inset:0;
+    background:radial-gradient(circle,rgba(255,255,255,.3) 0%,transparent 70%);
+    opacity:0; transition:opacity var(--ease);
+}
+.btn-ts:active::after { opacity:1; }
+.btn-ts:active { transform:scale(.97); }
+
+.btn-primary-ts { background:var(--p); border-color:var(--p); color:#fff !important; }
+.btn-primary-ts:hover { background:var(--p-dk); border-color:var(--p-dk); box-shadow:0 6px 20px var(--p-a30); color:#fff !important; }
+
+.btn-ghost-ts { background:var(--bg); border-color:var(--border); color:var(--ink2) !important; }
+.btn-ghost-ts:hover { border-color:var(--p-a20); color:var(--p) !important; background:#f5f3ff; }
+
+.btn-outline-ts { background:transparent; border-color:var(--border); color:var(--ink2) !important; }
+.btn-outline-ts:hover { border-color:var(--p); color:var(--p) !important; background:var(--p-a10); }
+
+/* ── Skeleton Loader ── */
+.skeleton-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:1.25rem; }
+@@media(max-width:1100px){ .skeleton-grid{grid-template-columns:repeat(3,1fr);} }
+@@media(max-width:768px) { .skeleton-grid{grid-template-columns:repeat(2,1fr);gap:.875rem;} }
+@@media(max-width:420px) { .skeleton-grid{grid-template-columns:1fr;} }
+
+.sk-card { background:var(--surf); border:1px solid var(--border); border-radius:var(--r16); overflow:hidden; box-shadow:var(--sh-card); }
+.sk-box {
+    background:linear-gradient(90deg,#f0f0f0 25%,#e8e8e8 50%,#f0f0f0 75%);
+    background-size:600px 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius:6px;
+}
+.sk-thumb { aspect-ratio:1/1; border-radius:0; }
+.sk-body { padding:.9rem 1rem 1.1rem; display:flex; flex-direction:column; gap:.6rem; }
+.sk-line-sm { height:10px; width:40%; }
+.sk-line-md { height:13px; width:75%; }
+.sk-line-lg { height:13px; width:55%; }
+.sk-price  { height:18px; width:48%; }
+.sk-btn    { height:38px; width:100%; border-radius:var(--r8); }
+
+/* ── Empty State ── */
+.empty-state {
+    text-align:center; padding:5rem 2rem; background:var(--surf);
+    border:1px solid var(--border); border-radius:var(--r20);
+    box-shadow:var(--sh-card); animation:fadeUp .6s var(--ease) forwards;
+}
+.empty-icon { font-size:3.5rem; color:var(--light); display:block; margin-bottom:1.25rem; }
+.empty-title { font-size:1.15rem; font-weight:800; color:var(--ink2); margin-bottom:.4rem; }
+.empty-sub { font-size:14px; color:var(--muted); margin-bottom:1.5rem; }
+
+/* Pagination */
+.store-pagination {
+    display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap;
+    margin-top:1.75rem; padding-top:1.25rem; border-top:1px solid var(--border);
+}
+.store-pagination-copy { font-size:13px; color:var(--muted); }
+.store-pagination-links { display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; }
+.page-link-ts {
+    display:inline-flex; align-items:center; justify-content:center; min-width:40px; height:40px;
+    padding:0 14px; border-radius:var(--r12); text-decoration:none; font-size:13px; font-weight:700;
+    border:1.5px solid var(--border); background:var(--surf); color:var(--ink2); transition:all var(--ease);
+}
+.page-link-ts:hover { border-color:var(--p); color:var(--p); background:var(--p-a10); }
+.page-link-ts.active { background:var(--p); border-color:var(--p); color:#fff; }
+.page-link-ts.disabled { pointer-events:none; opacity:.45; }
+
+/* ── Responsive hero ── */
+@@media(max-width:640px) {
+    .hero { padding:2rem 1.5rem; }
+    .hero h1 { font-size:1.65rem; }
+    .hero-kpis { margin-top:1.25rem; }
+    .hero-kpi-value { font-size:1.3rem; }
+    .store-pagination { align-items:flex-start; flex-direction:column; }
+}
+</style>
+
+<!-- ── Hero ──────────────────────────────────────────────── -->
+<section class="hero fade-up" id="store-hero" aria-labelledby="hero-heading">
+    <div class="hero-chip">
+        <i class="bi bi-lightning-charge-fill"></i> T-Socket Gadgets Store
+    </div>
+    <h1 id="hero-heading">
+        Shop gadgets, tech<br>&amp; <em>essentials</em>
+    </h1>
+    <p>Browse @totalItems products. Sign in only when you're ready to checkout — no pressure.</p>
+    <div class="hero-actions">
+        <a class="btn-hero-ghost" href="#products">
+            <i class="bi bi-grid-3x3-gap"></i> Browse products
+        </a>
+        @if (!isAuthenticated)
+        {
+            <a class="btn-hero-white" asp-controller="User" asp-action="Login" asp-route-returnUrl="@returnUrl">
+                <i class="bi bi-person-circle"></i> Login to buy
+            </a>
+        }
+        else if (isCustomer)
+        {
+            <a class="btn-hero-white" asp-controller="Cart" asp-action="Index">
+                <i class="bi bi-bag"></i> Open cart
+            </a>
+        }
+    </div>
+    <div class="hero-kpis">
+        <div class="hero-kpi">
+            <div class="hero-kpi-label"><i class="bi bi-stars me-1"></i>Collection</div>
+            <div class="hero-kpi-value" style="font-size:1.1rem;padding-top:4px">Curated</div>
+        </div>
+        <div class="hero-kpi">
+            <div class="hero-kpi-label"><i class="bi bi-shield-check me-1"></i>Verified</div>
+            <div class="hero-kpi-value">100%</div>
+        </div>
+        <div class="hero-kpi">
+            <div class="hero-kpi-label"><i class="bi bi-truck me-1"></i>Delivery</div>
+            <div class="hero-kpi-value" style="font-size:1.1rem;padding-top:4px">Fast</div>
+        </div>
+    </div>
+</section>
+
+<!-- ── Alerts ─────────────────────────────────────────────── -->
+@if (!string.IsNullOrWhiteSpace(TempData["Success"] as string))
+{
+    <div class="ts-alert ts-alert-ok" role="alert">
+        <i class="bi bi-check-circle-fill"></i><span>@TempData["Success"]</span>
+    </div>
+}
+@if (!string.IsNullOrWhiteSpace(TempData["Error"] as string))
+{
+    <div class="ts-alert ts-alert-err" role="alert">
+        <i class="bi bi-exclamation-circle-fill"></i><span>@TempData["Error"]</span>
+    </div>
+}
+
+<!-- ── Filter Bar ─────────────────────────────────────────── -->
+<div class="filter-bar fade-up" id="products">
+    <div class="filter-left">
+        <div style="width:4px;height:1.1rem;background:var(--p);border-radius:4px;flex-shrink:0"></div>
+        <span class="filter-title">Products</span>
+        <span class="filter-count"><i class="bi bi-grid me-1"></i>Shop collection</span>
+        @if (!string.IsNullOrWhiteSpace(q))
+        {
+            <span style="font-size:13px;color:var(--muted)">Results for "<strong>@q</strong>"</span>
+        }
+    </div>
+    <div class="filter-chips">
+        <a class="chip active" href="@Url.Action("Store","Home")"><i class="bi bi-grid"></i> All</a>
+        <a class="chip" href="@Url.Action("Store","Home",new{q="phone"})"><i class="bi bi-phone"></i> Phones</a>
+        <a class="chip" href="@Url.Action("Store","Home",new{q="laptop"})"><i class="bi bi-laptop"></i> Laptops</a>
+        <a class="chip" href="@Url.Action("Store","Home",new{q="audio"})"><i class="bi bi-headphones"></i> Audio</a>
+    </div>
+</div>
+
+<!-- ── Skeleton (shown briefly on load) ──────────────────── -->
+<div class="skeleton-grid" id="skeleton-grid" aria-hidden="true">
+    @for (int s = 0; s < 8; s++)
+    {
+        <div class="sk-card">
+            <div class="sk-box sk-thumb"></div>
+            <div class="sk-body">
+                <div class="sk-box sk-line-sm"></div>
+                <div class="sk-box sk-line-md"></div>
+                <div class="sk-box sk-line-lg"></div>
+                <div class="sk-box sk-price"></div>
+                <div class="sk-box sk-btn"></div>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- ── Product Grid ───────────────────────────────────────── -->
+@if (items.Count == 0)
+{
+    <div class="empty-state" id="product-grid" role="status">
+        <i class="bi bi-inbox empty-icon"></i>
+        <div class="empty-title">No products found</div>
+        <div class="empty-sub">
+            @(string.IsNullOrWhiteSpace(q)
+                ? "Check back soon — new items are being added."
+                : $"No results for \"{q}\". Try a different search term.")
+        </div>
+        <a class="btn-hero-ghost" href="@Url.Action("Store","Home")" style="display:inline-flex;background:var(--p);border-color:var(--p);color:#fff">
+            <i class="bi bi-arrow-left"></i> Browse all products
+        </a>
+    </div>
+}
+else
+{
+    <div class="product-grid" id="product-grid">
+        @foreach (var item in items)
+        {
+            var detailUrl  = Url.Action("Details","Home",new{id=item.Id}) ?? "#";
+            var buyUrl     = Url.Action("CreateOrder","Order",new{itemId=item.Id}) ?? "#";
+            var loginCart  = Url.Action("Login","User",new{returnUrl=detailUrl}) ?? "#";
+            var loginBuy   = Url.Action("Login","User",new{returnUrl=buyUrl}) ?? "#";
+            var stockOk    = item.QuantityInStock > 5;
+            var ratingVal  = (item.Id.ToByteArray()[0] % 3) + 3;
+            var ratingDec  = item.Id.ToByteArray()[1] % 2 == 0 ? ".0" : ".5";
+
+            <article class="pcard reveal-card" role="article" aria-label="@item.Name">
+                <div class="pcard-thumb">
+                    <a href="@detailUrl" aria-label="View details of @item.Name">
+                        @if (!string.IsNullOrWhiteSpace(item.ImagePath))
+                        {
+                            <img src="@item.ImagePath" alt="@item.Name" loading="lazy" />
+                        }
+                        else
+                        {
+                            <div class="pcard-no-img">
+                                <i class="bi bi-image"></i>
+                                <span>No image</span>
+                            </div>
+                        }
+                    </a>
+                    <span class="stock-badge @(stockOk ? "stock-ok" : "stock-low")">
+                        @(stockOk ? $"{item.QuantityInStock} in stock" : $"Only {item.QuantityInStock} left")
+                    </span>
+                </div>
+
+                <div class="pcard-body">
+                    <div class="pcard-brand">@item.Brand</div>
+                    <div class="pcard-name" title="@item.Name">@item.Name</div>
+
+                    <div class="pcard-stars" aria-label="Rating: @ratingVal@ratingDec out of 5">
+                        @for (int i = 1; i <= 5; i++)
+                        {
+                            <i class="bi @(i <= ratingVal ? "bi-star-fill" : "bi-star") star @(i <= ratingVal ? "filled" : "empty")"></i>
+                        }
+                        <span>@ratingVal@ratingDec</span>
+                    </div>
+
+                    <div class="pcard-price">&#8358;@item.Price.ToString("N2")</div>
+
+                    <div class="pcard-divider"></div>
+
+                    <div class="pcard-actions">
+                        <a class="btn-ts btn-ghost-ts" href="@detailUrl">
+                            <i class="bi bi-eye"></i> View details
+                        </a>
+
+                        @if (isAuthenticated && isCustomer)
+                        {
+                            <form asp-controller="Cart" asp-action="AddToCart" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="itemId"    value="@item.Id" />
+                                <input type="hidden" name="quantity"  value="1" />
+                                <input type="hidden" name="returnUrl" value="@returnUrl" />
+                                <button type="submit" class="btn-ts btn-primary-ts">
+                                    <i class="bi bi-bag-plus"></i> Add to cart
+                                </button>
+                            </form>
+                            <a class="btn-ts btn-outline-ts" href="@buyUrl">
+                                <i class="bi bi-lightning-charge"></i> Buy now
+                            </a>
+                        }
+                        else
+                        {
+                            <a class="btn-ts btn-primary-ts" href="@loginCart">
+                                <i class="bi bi-bag-plus"></i> Add to cart
+                            </a>
+                            <a class="btn-ts btn-outline-ts" href="@loginBuy">
+                                <i class="bi bi-lightning-charge"></i> Buy now
+                            </a>
+                        }
+                    </div>
+                </div>
+            </article>
+        }
+    </div>
+
+    @if (pagination != null && pagination.TotalPages > 1)
+    {
+        var startPage = Math.Max(1, currentPage - 2);
+        var endPage = Math.Min(pagination.TotalPages, currentPage + 2);
+
+        <nav class="store-pagination fade-up" aria-label="Store pagination">
+            <div class="store-pagination-copy">Page @currentPage of @pagination.TotalPages</div>
+            <div class="store-pagination-links">
+                <a class="page-link-ts @(pagination.HasPreviousPage ? string.Empty : "disabled")"
+                   href="@Url.Action("Store", "Home", new { q, pageNumber = currentPage - 1, pageSize })">
+                    <i class="bi bi-arrow-left"></i> Previous
+                </a>
+
+                @for (var pageIndex = startPage; pageIndex <= endPage; pageIndex++)
+                {
+                    <a class="page-link-ts @(pageIndex == currentPage ? "active" : string.Empty)"
+                       href="@Url.Action("Store", "Home", new { q, pageNumber = pageIndex, pageSize })">
+                        @pageIndex
+                    </a>
+                }
+
+                <a class="page-link-ts @(pagination.HasNextPage ? string.Empty : "disabled")"
+                   href="@Url.Action("Store", "Home", new { q, pageNumber = currentPage + 1, pageSize })">
+                    Next <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </nav>
+    }
+}
+
+@section Scripts {
+<script>
+(function(){
+    // ── Show skeleton then reveal grid ──
+    const skeleton = document.getElementById('skeleton-grid');
+    const grid     = document.getElementById('product-grid');
+    if(skeleton && grid){
+        grid.style.display = 'none';
+        setTimeout(()=>{
+            skeleton.style.transition = 'opacity .35s';
+            skeleton.style.opacity = '0';
+            setTimeout(()=>{
+                skeleton.style.display = 'none';
+                grid.style.display = '';
+                initReveal();
+            }, 360);
+        }, 700);
+    } else { initReveal(); }
+
+    // ── Intersection Observer scroll-reveal ──
+    function initReveal(){
+        const cards = document.querySelectorAll('.reveal-card');
+        if(!cards.length) return;
+        const io = new IntersectionObserver((entries)=>{
+            entries.forEach((e,i)=>{
+                if(e.isIntersecting){
+                    setTimeout(()=> e.target.classList.add('in'), i * 60);
+                    io.unobserve(e.target);
+                }
+            });
+        },{ threshold:.1 });
+        cards.forEach(c =>{ c.classList.add('fade-up'); io.observe(c); });
+    }
+
+    // ── Hero fade-up on load ──
+    document.querySelectorAll('.fade-up').forEach((el,i)=>{
+        setTimeout(()=> el.classList.add('in'), 80 + i * 120);
+    });
+
+    // ── Ripple effect on .btn-ts ──
+    document.addEventListener('click', e => {
+        const btn = e.target.closest('.btn-ts');
+        if(!btn) return;
+        const r = document.createElement('span');
+        const d = Math.max(btn.offsetWidth, btn.offsetHeight);
+        const rect = btn.getBoundingClientRect();
+        r.style.cssText = `position:absolute;width:${d}px;height:${d}px;border-radius:50%;
+            background:rgba(255,255,255,.35);transform:scale(0);pointer-events:none;
+            left:${e.clientX-rect.left-d/2}px;top:${e.clientY-rect.top-d/2}px;
+            animation:ripple .55s ease-out forwards;`;
+        btn.appendChild(r);
+        setTimeout(()=> r.remove(), 600);
+    });
+
+    // ── Active filter chip ──
+    document.querySelectorAll('.chip').forEach(chip=>{
+        chip.addEventListener('click',function(){
+            document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+            this.classList.add('active');
+        });
+    });
+})();
+</script>
+<style>
+@@keyframes ripple { to { transform:scale(2.5); opacity:0; } }
+</style>
+}

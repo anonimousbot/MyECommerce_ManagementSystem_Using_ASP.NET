@@ -1,0 +1,53 @@
+@{
+    ViewBag.Title = "Access Denied";
+    var returnUrl = ViewBag.ReturnUrl as string;
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <div class="card shadow-sm">
+                <div class="card-body text-center p-5">
+                    <h2 class="mb-3 text-danger"><i class="fas fa-ban me-2"></i>Access Denied</h2>
+                    <p class="text-muted mb-4">You don't have permission to access this page.</p>
+
+                    <div class="d-flex flex-wrap justify-content-center gap-2">
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            if (User.IsInRole("Admin"))
+                            {
+                                <a asp-controller="Item" asp-action="Index" class="btn btn-primary">
+                                    <i class="fas fa-table me-2"></i>Go to Admin Dashboard
+                                </a>
+                            }
+                            else if (User.IsInRole("Customer"))
+                            {
+                                <a asp-controller="Customer" asp-action="Index" class="btn btn-primary">
+                                    <i class="fas fa-home me-2"></i>Go to Customer Dashboard
+                                </a>
+                            }
+
+                            <a asp-controller="User" asp-action="Logout" class="btn btn-outline-danger">
+                                <i class="fas fa-right-from-bracket me-2"></i>Logout
+                            </a>
+                        }
+                        else
+                        {
+                            <a asp-controller="User" asp-action="Login" class="btn btn-primary">
+                                <i class="fas fa-right-to-bracket me-2"></i>Login
+                            </a>
+                        }
+
+                        @if (!string.IsNullOrWhiteSpace(returnUrl))
+                        {
+                            <a href="@returnUrl" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-rotate-left me-2"></i>Try Again
+                            </a>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

@@ -1,46 +1,135 @@
 ﻿@using EMS.Models.DTOs
-
-@model BaseResponse<EMS.Models.DTOs.Items.ItemDto> 
+@model BaseResponse<EMS.Models.DTOs.Items.ItemDto>
 @{
-
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
-    ViewBag.Title = "View Item";
-
+    ViewBag.Title = "Delete Item";
 }
-@if (Model?.Data != null)
-{
 
-    <h2>Delete Item</h2>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
 
+<style>
+    .delete-container {
+        max-width: 600px;
+        margin: 50px auto;
+    }
 
-    <div class="alert alert-warning">
-        Are you sure you want to delete the following item?
-    </div>
-    
-<div>
-    <dl class="row">
-        @* <dt class="col-sm-2">Id</dt>
-        <dd class="col-sm-10">@Model.Data.Id</dd> *@
+    .delete-card {
+        background: white;
+        border-radius: 20px;
+        border: none;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
 
-        <dt class="col-sm-2">Name</dt>
-        <dd class="col-sm-10">@Model.Data.Name</dd>
+    .danger-header {
+        background: linear-gradient(135deg, #d9534f 0%, #b52b27 100%);
+        color: white;
+        padding: 30px;
+        text-align: center;
+    }
 
-        <dt class="col-sm-2">Brand</dt>
-        <dd class="col-sm-10">@Model.Data.Brand</dd>
+    .item-preview-box {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 20px;
+        border-left: 5px solid #d9534f;
+    }
 
-        <dt class="col-sm-2">Price</dt>
-        <dd class="col-sm-10">@Model.Data.Price</dd>
-    </dl>
+    .btn-delete-confirm {
+        background: #d9534f;
+        color: white;
+        border-radius: 10px;
+        padding: 12px 30px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        border: none;
+    }
+
+    .btn-delete-confirm:hover {
+        background: #c9302c;
+        transform: scale(1.05);
+        box-shadow: 0 5px 15px rgba(217, 83, 79, 0.4);
+    }
+
+    .btn-cancel {
+        border-radius: 10px;
+        padding: 12px 30px;
+        color: #6c757d;
+        text-decoration: none;
+        font-weight: 600;
+        transition: 0.3s;
+    }
+
+    .btn-cancel:hover {
+        background: #eee;
+        color: #333;
+    }
+
+    /* Warning Pulse */
+    .pulse-warning {
+        animation: pulse-red 2s infinite;
+    }
+
+    @@keyframes pulse-red {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+</style>
+
+<div class="container delete-container">
+    @if (Model?.Data != null)
+    {
+        <div class="delete-card animate__animated animate__zoomIn">
+            <div class="danger-header">
+                <div class="animate__animated animate__headShake animate__infinite animate__slow">
+                    <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+                </div>
+                <h2 class="fw-bold">Confirm Deletion</h2>
+                <p class="mb-0 opacity-75">This action cannot be undone.</p>
+            </div>
+
+            <div class="p-4">
+                <div class="alert alert-light border text-center mb-4">
+                    Are you sure you want to remove <strong>@Model.Data.Name</strong> from the system?
+                </div>
+
+                <div class="item-preview-box mb-4 animate__animated animate__fadeInUp animate__delay-1s">
+                    <div class="row mb-2">
+                        <div class="col-4 text-muted small text-uppercase fw-bold">Item Name</div>
+                        <div class="col-8 fw-bold text-dark">@Model.Data.Name</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-4 text-muted small text-uppercase fw-bold">Brand</div>
+                        <div class="col-8"><span class="badge bg-dark">@Model.Data.Brand</span></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4 text-muted small text-uppercase fw-bold">Current Price</div>
+                        <div class="col-8 text-danger fw-bold">₦ @Model.Data.Price.ToString("N2")</div>
+                    </div>
+                </div>
+
+                <form asp-action="Delete" asp-route-id="@Model.Data.Id" asp-controller="Item" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a asp-action="Index" class="btn-cancel">
+                            <i class="fas fa-arrow-left me-2"></i> No, Keep it
+                        </a>
+                        <button type="submit" class="btn-delete-confirm shadow-sm">
+                            <i class="fas fa-trash-alt me-2"></i> Yes, Delete Item
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="text-center mt-5 animate__animated animate__fadeIn">
+            <i class="fas fa-search fa-4x text-muted mb-3"></i>
+            <h3 class="text-muted">Item not found</h3>
+            <a asp-action="Index" class="btn btn-primary mt-3">Back to Dashboard</a>
+        </div>
+    }
 </div>
-
-
-    <form asp-action="Delete" asp-route-id="@Model.Data.Id" asp-controller ="Item" method="post">
-        <button type="submit" class="btn btn-danger">Delete</button>
-        <a asp-action="Index" class="btn btn-secondary">Cancel</a>
-    </form>
-
-}
-else
-{
-    <p>Item not found</p>
-}
