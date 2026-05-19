@@ -93,7 +93,7 @@
 
     @RenderSection("Head", required: false)
 </head>
-<body class="min-h-screen bg-brand-shell text-brand-ink">
+<body class="min-h-screen overflow-x-hidden bg-brand-shell text-brand-ink">
     <div class="min-h-screen">
         <aside id="adminSidebar" class="admin-scroll fixed inset-y-0 left-0 z-50 flex w-[86vw] max-w-72 -translate-x-full flex-col overflow-y-auto border-r border-brand-line bg-brand-ink text-white shadow-nav transition-transform duration-300 lg:w-72 lg:translate-x-0">
             <div class="border-b border-white/10 px-6 py-6">
@@ -179,7 +179,7 @@
 
         <div class="lg:pl-72">
             <header class="sticky top-0 z-30 border-b border-brand-line/80 bg-white/92 backdrop-blur">
-                <div class="mx-auto flex w-full max-w-shell items-center justify-between gap-4 px-4 py-4 sm:px-6 xl:px-8">
+                <div class="mx-auto flex w-full max-w-shell flex-col gap-4 px-4 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between xl:px-8">
                     <div class="flex min-w-0 items-center gap-3">
                         <button type="button" class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-brand-line bg-white text-brand-ink shadow-sm lg:hidden" onclick="openAdminSidebar()">
                             <i class="bi bi-list text-lg"></i>
@@ -191,7 +191,7 @@
                         </div>
                     </div>
 
-                    <div class="flex shrink-0 items-center gap-3">
+                    <div class="flex w-full shrink-0 flex-col gap-3 sm:flex-row sm:flex-wrap lg:w-auto lg:justify-end">
                         @if (IsSectionDefined("AdminActions"))
                         {
                             @RenderSection("AdminActions", required: false)

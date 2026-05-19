@@ -1,190 +1,243 @@
-@using System.Security.Claims
 @{
-    var query = (string?)ViewBag.Query ?? string.Empty;
+    var query = (string?)(ViewBag.Query ?? ViewBag.CurrentSearch) ?? string.Empty;
     var isAuthenticated = User?.Identity?.IsAuthenticated ?? false;
     var isCustomer = User?.IsInRole("Customer") ?? false;
     var isAdmin = User?.IsInRole("Admin") ?? false;
     var returnUrl = $"{Context.Request.Path}{Context.Request.QueryString}";
+    var currentPath = (Context.Request.Path.Value ?? string.Empty).ToLowerInvariant();
+    var searchController = ViewBag.SearchController as string ?? (currentPath.StartsWith("/customer") ? "Customer" : "Home");
+    var searchAction = ViewBag.SearchAction as string ?? (currentPath.StartsWith("/customer") ? "Index" : "Store");
+
+    var storeUrl = Url.Action("Store", "Home") ?? "/";
+    var customerShopUrl = Url.Action("Index", "Customer") ?? "#";
+    var customerOrdersUrl = Url.Action("GetOrdersByCustomerId", "Order") ?? "#";
+    var customerProfileUrl = Url.Action("CustomerProfile", "Customer") ?? "#";
+    var adminUrl = Url.Action("Index", "Admin") ?? "#";
+
+    var isStoreActive = currentPath == "/" || currentPath.StartsWith("/home/store") || currentPath.StartsWith("/home/details");
+    var isCustomerShopActive = currentPath == "/customer" || currentPath.StartsWith("/customer/index");
+    var isCustomerOrdersActive = currentPath.StartsWith("/order/getordersbycustomerid");
+    var isCustomerProfileActive = currentPath.StartsWith("/customer/customerprofile");
 }
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="T-Socket Gadgets — Shop premium gadgets, accessories & electronics. Fast delivery, secure payment." />
+    <meta name="description" content="T-Socket Gadgets storefront with improved mobile browsing, cleaner navigation, and faster customer shopping flows." />
     <title>@(ViewBag.Title ?? "T-Socket Gadgets")</title>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="~/css/ts-theme.css" asp-append-version="true" />
 
     <style>
-        /* ── Global Reset & Tokens ──────────────────────────────── */
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
 
         :root {
-            --clr-bg:          #f4f5f7;
-            --clr-surface:     #ffffff;
-            --clr-surface-2:   #fafafa;
-            --clr-border:      rgba(15,23,42,0.09);
-            --clr-border-soft: rgba(15,23,42,0.05);
-
-            --clr-primary:     #6c2bd9;
-            --clr-primary-dk:  #5521b5;
-            --clr-primary-lt:  #7c3aed;
-            --clr-primary-a10: rgba(108,43,217,0.10);
-            --clr-primary-a20: rgba(108,43,217,0.20);
-            --clr-primary-a30: rgba(108,43,217,0.30);
-
-            --clr-amber:       #f59e0b;
-            --clr-green:       #16a34a;
-            --clr-red:         #dc2626;
-
-            --clr-text:        #0f172a;
-            --clr-text-2:      #1e293b;
-            --clr-muted:       #64748b;
-            --clr-light:       #94a3b8;
-
-            --radius-sm: 8px;
-            --radius-md: 12px;
-            --radius-lg: 18px;
-            --radius-xl: 24px;
-            --radius-pill: 999px;
-
-            --shadow-nav:  0 2px 40px rgba(15,23,42,0.10);
-            --shadow-sm:   0 1px 4px rgba(15,23,42,0.06);
-            --shadow-md:   0 4px 20px rgba(15,23,42,0.09);
-            --shadow-lg:   0 12px 40px rgba(15,23,42,0.12);
-
-            --nav-h: 70px;
-            --transition: 0.2s cubic-bezier(0.4,0,0.2,1);
+            --ts-bg: #eef4fb;
+            --ts-surface: rgba(255, 255, 255, 0.96);
+            --ts-surface-solid: #ffffff;
+            --ts-border: rgba(15, 23, 42, 0.08);
+            --ts-border-strong: rgba(15, 76, 129, 0.18);
+            --ts-primary: #0f4c81;
+            --ts-primary-dark: #0a365a;
+            --ts-primary-soft: #eff6ff;
+            --ts-ink: #0f172a;
+            --ts-copy: #334155;
+            --ts-muted: #64748b;
+            --ts-danger: #b91c1c;
+            --ts-danger-soft: #fef2f2;
+            --ts-shadow-sm: 0 8px 24px rgba(15, 23, 42, 0.08);
+            --ts-shadow-lg: 0 20px 45px rgba(15, 23, 42, 0.12);
+            --ts-radius-md: 16px;
+            --ts-radius-lg: 22px;
+            --ts-radius-xl: 28px;
+            --ts-radius-pill: 999px;
         }
 
-        html { scroll-behavior: smooth; }
+        html {
+            scroll-behavior: smooth;
+        }
 
         body {
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            background: var(--clr-bg);
-            color: var(--clr-text);
+            margin: 0;
             min-height: 100vh;
-            -webkit-font-smoothing: antialiased;
+            font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: var(--ts-ink);
+            background:
+                radial-gradient(circle at top left, rgba(15, 76, 129, 0.14), transparent 22%),
+                radial-gradient(circle at top right, rgba(108, 43, 217, 0.10), transparent 18%),
+                linear-gradient(180deg, #f8fbff 0%, var(--ts-bg) 100%);
         }
 
-        /* ── Navbar ─────────────────────────────────────────────── */
         .ts-nav {
             position: sticky;
             top: 0;
             z-index: 1000;
-            height: var(--nav-h);
-            background: rgba(255,255,255,0.85);
+            border-bottom: 1px solid var(--ts-border);
+            background: rgba(255, 255, 255, 0.84);
             backdrop-filter: blur(20px) saturate(180%);
             -webkit-backdrop-filter: blur(20px) saturate(180%);
-            border-bottom: 1px solid var(--clr-border);
-            box-shadow: var(--shadow-nav);
-            transition: background var(--transition), box-shadow var(--transition);
+            box-shadow: 0 2px 28px rgba(15, 23, 42, 0.06);
+            transition: background 0.2s ease, box-shadow 0.2s ease;
         }
 
         .ts-nav.scrolled {
-            background: rgba(255,255,255,0.96);
-            box-shadow: 0 4px 30px rgba(15,23,42,0.13);
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 10px 34px rgba(15, 23, 42, 0.10);
+        }
+
+        .ts-nav-inner,
+        .ts-mobile-panel {
+            width: min(100%, 1400px);
+            margin: 0 auto;
+            padding-left: 1.5rem;
+            padding-right: 1.5rem;
         }
 
         .ts-nav-inner {
-            height: 100%;
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 0 1.5rem;
             display: flex;
             align-items: center;
             gap: 1rem;
+            min-height: 76px;
         }
 
-        /* Logo */
         .ts-logo {
-            display: flex;
+            display: inline-flex;
             align-items: center;
-            gap: 10px;
-            text-decoration: none !important;
+            gap: 0.8rem;
             flex-shrink: 0;
+            text-decoration: none;
         }
 
         .ts-logo-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 13px;
-            background: linear-gradient(135deg, var(--clr-primary) 0%, var(--clr-primary-lt) 100%);
-            display: flex;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #0f4c81 0%, #1d74c9 100%);
             color: #fff;
-            font-size: 17px;
-            font-weight: 900;
-            letter-spacing: -1px;
-            box-shadow: 0 6px 20px var(--clr-primary-a30);
-            transition: transform var(--transition), box-shadow var(--transition);
+            font-size: 1rem;
+            box-shadow: 0 14px 32px rgba(15, 76, 129, 0.24);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
         .ts-logo:hover .ts-logo-icon {
-            transform: rotate(-5deg) scale(1.07);
-            box-shadow: 0 10px 28px var(--clr-primary-a30);
+            transform: translateY(-1px) rotate(-4deg);
+            box-shadow: 0 18px 38px rgba(15, 76, 129, 0.28);
         }
 
-        .ts-logo-text { display: flex; flex-direction: column; line-height: 1; }
-        .ts-logo-name { font-size: 15px; font-weight: 800; color: var(--clr-text); letter-spacing: -0.03em; }
-        .ts-logo-sub  { font-size: 10.5px; color: var(--clr-muted); font-weight: 500; margin-top: 1px; }
+        .ts-logo-text {
+            display: flex;
+            flex-direction: column;
+            line-height: 1;
+        }
 
-        /* Search */
+        .ts-logo-name {
+            font-size: 0.98rem;
+            font-weight: 900;
+            letter-spacing: -0.04em;
+            color: var(--ts-ink);
+        }
+
+        .ts-logo-sub {
+            margin-top: 0.2rem;
+            color: var(--ts-muted);
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .ts-nav-links {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+        }
+
+        .ts-nav-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.72rem 0.96rem;
+            border-radius: var(--ts-radius-pill);
+            border: 1px solid transparent;
+            color: var(--ts-muted);
+            text-decoration: none;
+            font-size: 0.86rem;
+            font-weight: 700;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+        }
+
+        .ts-nav-link:hover,
+        .ts-nav-link:focus-visible {
+            color: var(--ts-primary);
+            background: var(--ts-primary-soft);
+            border-color: var(--ts-border-strong);
+        }
+
+        .ts-nav-link.active {
+            color: var(--ts-primary);
+            background: #fff;
+            border-color: var(--ts-border-strong);
+            box-shadow: var(--ts-shadow-sm);
+        }
+
         .ts-search {
+            display: flex;
+            align-items: center;
             flex: 1;
             max-width: 520px;
-            display: flex;
-            background: var(--clr-surface);
-            border: 1.5px solid var(--clr-border);
-            border-radius: var(--radius-lg);
             overflow: hidden;
-            transition: border-color var(--transition), box-shadow var(--transition);
+            border: 1.5px solid var(--ts-border);
+            border-radius: 18px;
+            background: var(--ts-surface-solid);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
         .ts-search:focus-within {
-            border-color: var(--clr-primary-a30);
-            box-shadow: 0 0 0 4px var(--clr-primary-a10);
+            border-color: rgba(15, 76, 129, 0.28);
+            box-shadow: 0 0 0 4px rgba(15, 76, 129, 0.10);
         }
 
         .ts-search input {
             flex: 1;
-            border: none;
-            outline: none;
+            min-width: 0;
+            border: 0;
+            outline: 0;
             background: transparent;
-            padding: 0.72rem 1rem;
-            font-size: 14px;
-            font-family: inherit;
-            color: var(--clr-text);
+            padding: 0.85rem 1rem;
+            color: var(--ts-ink);
+            font-size: 0.92rem;
         }
 
-        .ts-search input::placeholder { color: var(--clr-light); }
+        .ts-search input::placeholder {
+            color: #94a3b8;
+        }
 
         .ts-search button {
-            border: none;
-            background: linear-gradient(135deg, var(--clr-primary), var(--clr-primary-lt));
-            color: #fff;
-            padding: 0 1.1rem;
-            cursor: pointer;
-            display: flex;
+            display: inline-flex;
             align-items: center;
-            gap: 6px;
-            font-size: 13.5px;
-            font-weight: 600;
-            font-family: inherit;
-            white-space: nowrap;
-            transition: filter var(--transition);
+            gap: 0.45rem;
+            height: 100%;
+            border: 0;
+            background: linear-gradient(135deg, #0f4c81 0%, #1d74c9 100%);
+            color: #fff;
+            padding: 0 1.05rem;
+            font-size: 0.84rem;
+            font-weight: 700;
+            cursor: pointer;
         }
 
-        .ts-search button:hover { filter: brightness(1.1); }
-
-        /* Nav actions */
         .ts-nav-actions {
             display: flex;
             align-items: center;
@@ -193,150 +246,203 @@
             flex-shrink: 0;
         }
 
-        .ts-pill {
+        .ts-pill,
+        .ts-cart-btn,
+        .ts-nav-toggle {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            padding: 0.48rem 0.95rem;
-            border: 1.5px solid var(--clr-border);
-            border-radius: var(--radius-pill);
-            background: var(--clr-surface);
-            color: var(--clr-text-2);
-            font-size: 13.5px;
-            font-weight: 600;
-            text-decoration: none !important;
+            justify-content: center;
+            gap: 0.45rem;
+            min-height: 44px;
+            border-radius: 14px;
+            border: 1.5px solid var(--ts-border);
+            background: var(--ts-surface-solid);
+            color: var(--ts-copy);
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .ts-pill {
+            padding: 0.58rem 0.95rem;
+            font-size: 0.84rem;
+            font-weight: 700;
             white-space: nowrap;
-            cursor: pointer;
-            transition: all var(--transition);
         }
 
-        .ts-pill:hover, .ts-pill:focus {
-            border-color: var(--clr-primary-a30);
-            color: var(--clr-primary);
-            background: var(--clr-primary-a10);
-            box-shadow: var(--shadow-sm);
+        .ts-cart-btn,
+        .ts-nav-toggle {
+            width: 44px;
+            padding: 0;
         }
 
-        .ts-pill.active {
-            background: var(--clr-primary);
-            border-color: var(--clr-primary);
-            color: #fff !important;
+        .ts-pill:hover,
+        .ts-pill:focus-visible,
+        .ts-cart-btn:hover,
+        .ts-cart-btn:focus-visible,
+        .ts-nav-toggle:hover,
+        .ts-nav-toggle[aria-expanded="true"] {
+            color: var(--ts-primary);
+            background: var(--ts-primary-soft);
+            border-color: var(--ts-border-strong);
+            box-shadow: var(--ts-shadow-sm);
         }
 
-        /* Cart icon button */
         .ts-cart-btn {
             position: relative;
-            width: 44px;
-            height: 44px;
-            border-radius: var(--radius-md);
-            border: 1.5px solid var(--clr-border);
-            background: var(--clr-surface);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--clr-text-2);
-            font-size: 18px;
-            text-decoration: none !important;
-            cursor: pointer;
-            transition: all var(--transition);
-        }
-
-        .ts-cart-btn:hover {
-            border-color: var(--clr-primary-a30);
-            color: var(--clr-primary);
-            background: var(--clr-primary-a10);
-            transform: translateY(-1px);
-            box-shadow: var(--shadow-sm);
+            font-size: 1rem;
         }
 
         .ts-cart-badge {
             position: absolute;
-            top: -5px;
-            right: -5px;
-            background: var(--clr-red);
-            color: #fff;
-            font-size: 9.5px;
-            font-weight: 800;
-            min-width: 18px;
-            height: 18px;
-            padding: 0 4px;
-            border-radius: var(--radius-pill);
-            display: flex;
+            top: -6px;
+            right: -6px;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            border: 2px solid var(--clr-surface);
+            min-width: 19px;
+            height: 19px;
+            border: 2px solid #fff;
+            border-radius: var(--ts-radius-pill);
+            background: var(--ts-danger);
+            color: #fff;
+            font-size: 0.6rem;
+            font-weight: 800;
+            padding: 0 4px;
         }
 
-        /* Dropdown */
         .ts-nav .dropdown-menu {
-            border-radius: var(--radius-lg);
-            border: 1px solid var(--clr-border);
-            box-shadow: var(--shadow-lg);
-            padding: 6px;
-            min-width: 180px;
+            border: 1px solid var(--ts-border);
+            border-radius: 18px;
+            box-shadow: var(--ts-shadow-lg);
+            padding: 0.45rem;
         }
 
         .ts-nav .dropdown-item {
-            border-radius: var(--radius-sm);
-            font-size: 13.5px;
-            font-weight: 500;
-            padding: 0.52rem 0.85rem;
-            color: var(--clr-text-2);
-            transition: all var(--transition);
+            border-radius: 12px;
+            padding: 0.65rem 0.85rem;
+            font-size: 0.86rem;
+            font-weight: 600;
+            color: var(--ts-copy);
         }
 
-        .ts-nav .dropdown-item:hover {
-            background: var(--clr-primary-a10);
-            color: var(--clr-primary);
+        .ts-nav .dropdown-item:hover,
+        .ts-nav .dropdown-item:focus {
+            color: var(--ts-primary);
+            background: var(--ts-primary-soft);
         }
 
-        /* Mobile search bar */
         .ts-nav-mobile-search {
             display: none;
-            padding: 0 1rem 0.85rem;
+            padding: 0 1.5rem 1rem;
         }
 
-        /* ── Main content ────────────────────────────────────────── */
+        .ts-mobile-panel {
+            display: none;
+            padding-bottom: 1rem;
+        }
+
+        .ts-mobile-panel.open {
+            display: block;
+        }
+
+        .ts-mobile-shell {
+            border: 1px solid var(--ts-border);
+            border-radius: var(--ts-radius-xl);
+            background: var(--ts-surface);
+            box-shadow: var(--ts-shadow-lg);
+            padding: 1rem;
+        }
+
+        .ts-mobile-links {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.75rem;
+        }
+
+        .ts-mobile-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            min-width: 0;
+            border-radius: 18px;
+            border: 1px solid var(--ts-border);
+            background: #fff;
+            padding: 0.95rem 1rem;
+            color: var(--ts-copy);
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .ts-mobile-link:hover,
+        .ts-mobile-link.active {
+            color: var(--ts-primary);
+            background: var(--ts-primary-soft);
+            border-color: var(--ts-border-strong);
+        }
+
+        .ts-mobile-link strong {
+            display: block;
+            font-size: 0.86rem;
+        }
+
+        .ts-mobile-link span {
+            display: block;
+            color: var(--ts-muted);
+            font-size: 0.75rem;
+            line-height: 1.45;
+        }
+
+        .ts-mobile-auth {
+            margin-top: 0.8rem;
+            display: grid;
+            gap: 0.75rem;
+        }
+
+        .ts-mobile-auth .ts-pill {
+            justify-content: center;
+            width: 100%;
+        }
+
         .ts-main {
-            max-width: 1400px;
+            width: min(100%, 1400px);
             margin: 0 auto;
             padding: 2rem 1.5rem 4rem;
         }
 
-        /* ── Footer ─────────────────────────────────────────────── */
         .ts-footer {
-            background: var(--clr-surface);
-            border-top: 1px solid var(--clr-border);
             padding: 2rem 1.5rem;
+            border-top: 1px solid var(--ts-border);
+            background: rgba(255, 255, 255, 0.86);
             text-align: center;
-            color: var(--clr-muted);
-            font-size: 13px;
+            color: var(--ts-muted);
+            font-size: 0.82rem;
         }
 
-        .ts-footer a { color: var(--clr-primary); text-decoration: none; font-weight: 600; }
+        .ts-footer a {
+            color: var(--ts-primary);
+            text-decoration: none;
+            font-weight: 700;
+        }
 
-        /* ── Scroll-to-top ───────────────────────────────────────── */
         #ts-scroll-top {
             position: fixed;
-            bottom: 28px;
             right: 28px;
+            bottom: 28px;
+            z-index: 1001;
             width: 46px;
             height: 46px;
-            border-radius: var(--radius-md);
-            background: var(--clr-primary);
-            color: #fff;
-            border: none;
-            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px;
-            box-shadow: 0 8px 24px var(--clr-primary-a30);
+            border: 0;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #0f4c81 0%, #1d74c9 100%);
+            color: #fff;
+            box-shadow: 0 16px 30px rgba(15, 76, 129, 0.26);
             opacity: 0;
             pointer-events: none;
             transform: translateY(12px);
-            transition: opacity 0.3s, transform 0.3s;
-            z-index: 999;
+            transition: opacity 0.2s ease, transform 0.2s ease;
         }
 
         #ts-scroll-top.visible {
@@ -345,62 +451,124 @@
             transform: translateY(0);
         }
 
-        #ts-scroll-top:hover {
-            background: var(--clr-primary-dk);
-            transform: translateY(-2px);
-            box-shadow: 0 12px 32px var(--clr-primary-a30);
+        @@media (max-width: 1199px) {
+            .ts-nav-links {
+                display: none;
+            }
         }
 
-        /* ── Responsive ─────────────────────────────────────────── */
         @@media (max-width: 991px) {
-            .ts-search { max-width: 100%; display: none; }
-            .ts-logo-sub { display: none; }
-            .ts-nav-mobile-search { display: block; }
+            .ts-nav {
+                position: sticky;
+            }
+
+            .ts-nav-inner {
+                min-height: 72px;
+                padding-top: 0.8rem;
+                padding-bottom: 0.8rem;
+            }
+
+            .ts-search {
+                max-width: 100%;
+            }
+
+            .ts-nav-mobile-search {
+                display: block;
+            }
+
+            .ts-main {
+                padding-top: 1.4rem;
+            }
         }
+
+        @@media (max-width: 767px) {
+            .ts-nav-inner,
+            .ts-mobile-panel,
+            .ts-main {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+
+            .ts-nav-mobile-search {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+
+            .ts-mobile-links {
+                grid-template-columns: 1fr;
+            }
+        }
+
         @@media (max-width: 575px) {
-            .ts-logo-text { display: none; }
-            .ts-main { padding: 1.25rem 1rem 3rem; }
+            .ts-logo-text {
+                display: none;
+            }
+
+            .ts-nav-actions {
+                gap: 0.35rem;
+            }
+
+            .ts-pill.d-none.d-sm-inline-flex {
+                display: none !important;
+            }
+
+            .ts-main {
+                padding-bottom: 3rem;
+            }
         }
     </style>
 </head>
 <body>
-
-    <!-- ── Navbar ────────────────────────────────────────────── -->
     <nav class="ts-nav" id="ts-navbar" role="navigation" aria-label="Main navigation">
         <div class="ts-nav-inner">
-
-            <!-- Logo -->
-            <a class="ts-logo" asp-action="Store" asp-controller="Home" aria-label="T-Socket Gadgets — Home">
+            <a class="ts-logo" href="@storeUrl" aria-label="T-Socket Gadgets home">
                 <div class="ts-logo-icon"><i class="bi bi-lightning-charge-fill"></i></div>
-                <div class="ts-logo-text d-none d-sm-flex">
+                <div class="ts-logo-text">
                     <span class="ts-logo-name">T-Socket</span>
-                    <span class="ts-logo-sub">Gadgets &amp; Tech</span>
+                    <span class="ts-logo-sub">Gadgets and Tech</span>
                 </div>
             </a>
 
-            <!-- Search (desktop) -->
-            <form class="ts-search d-none d-lg-flex" asp-action="Store" asp-controller="Home" method="get" role="search" aria-label="Product search">
-                <input type="search" name="q" value="@query" placeholder="Search products, brands…" aria-label="Search products" autocomplete="off" />
+            <div class="ts-nav-links">
+                <a class="ts-nav-link @(isStoreActive ? "active" : string.Empty)" href="@storeUrl">
+                    <i class="bi bi-shop-window"></i>
+                    Store
+                </a>
+                @if (isCustomer)
+                {
+                    <a class="ts-nav-link @(isCustomerShopActive ? "active" : string.Empty)" href="@customerShopUrl">
+                        <i class="bi bi-grid-3x3-gap"></i>
+                        My catalog
+                    </a>
+                    <a class="ts-nav-link @(isCustomerOrdersActive ? "active" : string.Empty)" href="@customerOrdersUrl">
+                        <i class="bi bi-receipt"></i>
+                        Orders
+                    </a>
+                }
+            </div>
+
+            <form class="ts-search d-none d-lg-flex" action="@Url.Action(searchAction, searchController)" method="get" role="search" aria-label="Product search">
+                <input type="search" name="q" value="@query" placeholder="Search products, brands..." aria-label="Search products" autocomplete="off" />
                 <button type="submit" aria-label="Submit search">
                     <i class="bi bi-search"></i>
                     <span>Search</span>
                 </button>
             </form>
 
-            <!-- Nav actions -->
             <div class="ts-nav-actions">
-
                 @if (isAdmin)
                 {
-                    <a class="ts-pill d-none d-md-inline-flex" asp-controller="Item" asp-action="Index" title="Admin Dashboard">
-                        <i class="bi bi-speedometer2"></i> Admin
+                    <a class="ts-pill d-none d-md-inline-flex" href="@adminUrl" title="Admin dashboard">
+                        <i class="bi bi-speedometer2"></i>
+                        Admin
                     </a>
                 }
 
                 @if (!isAuthenticated)
                 {
                     <a class="ts-pill d-none d-sm-inline-flex" asp-controller="User" asp-action="Login" asp-route-returnUrl="@returnUrl">
-                        <i class="bi bi-person-circle"></i> Login
+                        <i class="bi bi-person-circle"></i>
+                        Login
                     </a>
                 }
                 else
@@ -413,8 +581,9 @@
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenuBtn">
                             @if (isCustomer)
                             {
-                                <li><a class="dropdown-item" asp-controller="Customer" asp-action="Index"><i class="bi bi-grid me-2"></i>Dashboard</a></li>
-                                <li><a class="dropdown-item" asp-controller="Customer" asp-action="CustomerProfile"><i class="bi bi-person me-2"></i>My Profile</a></li>
+                                <li><a class="dropdown-item" href="@customerShopUrl"><i class="bi bi-grid me-2"></i>My catalog</a></li>
+                                <li><a class="dropdown-item" href="@customerProfileUrl"><i class="bi bi-person me-2"></i>My profile</a></li>
+                                <li><a class="dropdown-item" href="@customerOrdersUrl"><i class="bi bi-receipt me-2"></i>My orders</a></li>
                                 <li><hr class="dropdown-divider mx-2" /></li>
                             }
                             <li><a class="dropdown-item text-danger" asp-controller="User" asp-action="Logout"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
@@ -422,11 +591,10 @@
                     </div>
                 }
 
-                <!-- Cart -->
                 <div class="position-relative">
                     @if (isCustomer)
                     {
-                        <a class="ts-cart-btn" asp-controller="Cart" asp-action="Index" title="View Cart" aria-label="View cart">
+                        <a class="ts-cart-btn" asp-controller="Cart" asp-action="Index" title="View cart" aria-label="View cart">
                             <i class="bi bi-bag"></i>
                         </a>
                         <span id="cart-count-badge" class="ts-cart-badge d-none" aria-live="polite" aria-label="Cart items count">0</span>
@@ -439,69 +607,172 @@
                     }
                 </div>
 
+                <button type="button" class="ts-nav-toggle d-lg-none" id="ts-nav-toggle" aria-expanded="false" aria-controls="ts-mobile-panel" aria-label="Open navigation menu">
+                    <i class="bi bi-list"></i>
+                </button>
             </div>
         </div>
 
-        <!-- Mobile search -->
         <div class="ts-nav-mobile-search d-lg-none">
-            <form class="ts-search d-flex" asp-action="Store" asp-controller="Home" method="get" role="search" aria-label="Product search mobile">
-                <input type="search" name="q" value="@query" placeholder="Search products…" aria-label="Search products" autocomplete="off" />
+            <form class="ts-search" action="@Url.Action(searchAction, searchController)" method="get" role="search" aria-label="Product search mobile">
+                <input type="search" name="q" value="@query" placeholder="Search products..." aria-label="Search products" autocomplete="off" />
                 <button type="submit" aria-label="Submit search"><i class="bi bi-search"></i></button>
             </form>
         </div>
+
+        <div class="ts-mobile-panel d-lg-none" id="ts-mobile-panel" hidden>
+            <div class="ts-mobile-shell">
+                <div class="ts-mobile-links">
+                    <a class="ts-mobile-link @(isStoreActive ? "active" : string.Empty)" href="@storeUrl">
+                        <i class="bi bi-shop-window"></i>
+                        <div>
+                            <strong>Store</strong>
+                            <span>Browse the public storefront</span>
+                        </div>
+                    </a>
+
+                    @if (isCustomer)
+                    {
+                        <a class="ts-mobile-link @(isCustomerShopActive ? "active" : string.Empty)" href="@customerShopUrl">
+                            <i class="bi bi-grid-3x3-gap"></i>
+                            <div>
+                                <strong>My catalog</strong>
+                                <span>Shop with customer tools</span>
+                            </div>
+                        </a>
+                        <a class="ts-mobile-link @(isCustomerOrdersActive ? "active" : string.Empty)" href="@customerOrdersUrl">
+                            <i class="bi bi-receipt"></i>
+                            <div>
+                                <strong>Orders</strong>
+                                <span>Track your purchases</span>
+                            </div>
+                        </a>
+                        <a class="ts-mobile-link @(isCustomerProfileActive ? "active" : string.Empty)" href="@customerProfileUrl">
+                            <i class="bi bi-person-circle"></i>
+                            <div>
+                                <strong>Profile</strong>
+                                <span>Update your customer info</span>
+                            </div>
+                        </a>
+                    }
+
+                    @if (isAdmin)
+                    {
+                        <a class="ts-mobile-link" href="@adminUrl">
+                            <i class="bi bi-speedometer2"></i>
+                            <div>
+                                <strong>Admin</strong>
+                                <span>Manage products and orders</span>
+                            </div>
+                        </a>
+                    }
+                </div>
+
+                <div class="ts-mobile-auth">
+                    @if (!isAuthenticated)
+                    {
+                        <a class="ts-pill" asp-controller="User" asp-action="Login" asp-route-returnUrl="@returnUrl">
+                            <i class="bi bi-person-circle"></i>
+                            Login
+                        </a>
+                    }
+                    else
+                    {
+                        <a class="ts-pill" asp-controller="User" asp-action="Logout">
+                            <i class="bi bi-box-arrow-right"></i>
+                            Logout
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
     </nav>
 
-    <!-- ── Main ──────────────────────────────────────────────── -->
     <main class="ts-main" id="main-content">
         @RenderBody()
     </main>
 
-    <!-- ── Footer ────────────────────────────────────────────── -->
     <footer class="ts-footer" role="contentinfo">
-        <p>&copy; @DateTime.Now.Year <a asp-controller="Home" asp-action="Store">T-Socket Gadgets</a> &mdash; Shop smart &bull; Pay secure</p>
+        <p>&copy; @DateTime.Now.Year <a asp-controller="Home" asp-action="Store">T-Socket Gadgets</a> &mdash; Cleaner browsing, secure checkout, better mobile flow.</p>
     </footer>
 
-    <!-- Scroll to top -->
     <button id="ts-scroll-top" aria-label="Scroll back to top" title="Back to top">
         <i class="bi bi-arrow-up"></i>
     </button>
 
-    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         (function () {
-            // ── Navbar scroll effect
-            const nav = document.getElementById('ts-navbar');
+            const nav = document.getElementById("ts-navbar");
             if (nav) {
-                const onScroll = () => nav.classList.toggle('scrolled', window.scrollY > 20);
-                window.addEventListener('scroll', onScroll, { passive: true });
-                onScroll();
+                const handleScroll = () => nav.classList.toggle("scrolled", window.scrollY > 20);
+                window.addEventListener("scroll", handleScroll, { passive: true });
+                handleScroll();
             }
 
-            // ── Scroll-to-top button
-            const scrollBtn = document.getElementById('ts-scroll-top');
-            if (scrollBtn) {
-                window.addEventListener('scroll', () => {
-                    scrollBtn.classList.toggle('visible', window.scrollY > 400);
+            const scrollButton = document.getElementById("ts-scroll-top");
+            if (scrollButton) {
+                window.addEventListener("scroll", () => {
+                    scrollButton.classList.toggle("visible", window.scrollY > 320);
                 }, { passive: true });
-                scrollBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+                scrollButton.addEventListener("click", () => {
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                });
             }
 
-            // ── Cart count badge
-            const badge = document.getElementById('cart-count-badge');
-            if (!badge) return;
+            const navToggle = document.getElementById("ts-nav-toggle");
+            const mobilePanel = document.getElementById("ts-mobile-panel");
+            const setMobileMenuState = (open) => {
+                if (!navToggle || !mobilePanel) {
+                    return;
+                }
+
+                navToggle.setAttribute("aria-expanded", open ? "true" : "false");
+                mobilePanel.hidden = !open;
+                mobilePanel.classList.toggle("open", open);
+            };
+
+            if (navToggle && mobilePanel) {
+                navToggle.addEventListener("click", () => {
+                    const nextState = navToggle.getAttribute("aria-expanded") !== "true";
+                    setMobileMenuState(nextState);
+                });
+
+                mobilePanel.querySelectorAll("a").forEach(link => {
+                    link.addEventListener("click", () => setMobileMenuState(false));
+                });
+
+                window.addEventListener("resize", () => {
+                    if (window.innerWidth >= 992) {
+                        setMobileMenuState(false);
+                    }
+                });
+            }
+
+            const badge = document.getElementById("cart-count-badge");
+            if (!badge) {
+                return;
+            }
+
             const updateCartCount = async () => {
                 try {
-                    const res = await fetch('@Url.Action("Count", "Cart")', {
-                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    const response = await fetch('@Url.Action("Count", "Cart")', {
+                        headers: { "X-Requested-With": "XMLHttpRequest" }
                     });
-                    if (!res.ok) return;
-                    const data = await res.json();
+
+                    if (!response.ok) {
+                        return;
+                    }
+
+                    const data = await response.json();
                     const count = Number(data?.count ?? 0);
-                    badge.textContent = count > 99 ? '99+' : String(count);
-                    badge.classList.toggle('d-none', count <= 0);
-                } catch { /* silent */ }
+                    badge.textContent = count > 99 ? "99+" : String(count);
+                    badge.classList.toggle("d-none", count <= 0);
+                } catch {
+                }
             };
+
             updateCartCount();
             window.setInterval(updateCartCount, 8000);
         })();

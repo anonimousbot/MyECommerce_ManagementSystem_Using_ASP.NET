@@ -20,10 +20,15 @@ namespace EMS.Controllers
         private readonly IUserService _userService = userService ?? throw new ArgumentNullException(nameof(userService));
 
         [Authorize(Policy = AuthorizationPolicies.CustomerOnly)]
-        public async Task<IActionResult> Index(string searchString, int pageNumber = 1, int pageSize = 9)
+        public async Task<IActionResult> Index(string? q, string? searchString, int pageNumber = 1, int pageSize = 9)
         {
-            ViewBag.CurrentSearch = searchString;
-            var items = await _itemService.GetItemAsync(CancellationToken.None, pageNumber, pageSize, searchString);
+            var query = string.IsNullOrWhiteSpace(q) ? searchString : q;
+            ViewBag.CurrentSearch = query;
+            ViewBag.Query = query;
+            ViewBag.SearchController = "Customer";
+            ViewBag.SearchAction = "Index";
+
+            var items = await _itemService.GetItemAsync(CancellationToken.None, pageNumber, pageSize, query);
             return View(items);
         }
 

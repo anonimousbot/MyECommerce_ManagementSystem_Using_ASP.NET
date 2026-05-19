@@ -2,284 +2,770 @@
 @model BaseResponse<IEnumerable<EMS.Models.DTOs.Items.ItemDto>>
 
 @{
-    ViewBag.Title = "Shop Items";
+    Layout = "~/Views/Shared/_StoreLayout.cshtml";
+    ViewBag.Title = "Customer Catalog | T-Socket Gadgets";
+    ViewBag.SearchController = "Customer";
+    ViewBag.SearchAction = "Index";
+
     var items = Model?.Data?.ToList() ?? [];
-    var search = (string?)ViewBag.CurrentSearch ?? string.Empty;
+    var query = (string?)(ViewBag.Query ?? ViewBag.CurrentSearch) ?? string.Empty;
+    var pagination = Model?.Pagination;
+    var currentPage = pagination?.PageNumber ?? 1;
+    var totalPages = pagination?.TotalPages ?? 1;
+    var totalItems = pagination?.TotalItems ?? items.Count;
     var returnUrl = $"{ViewContext.HttpContext.Request.Path}{ViewContext.HttpContext.Request.QueryString}";
 }
 
 <style>
+    .customer-shell {
+        display: grid;
+        gap: 1.5rem;
+    }
+
     .customer-hero {
         position: relative;
         overflow: hidden;
         border-radius: 28px;
-        padding: 2.2rem 2rem;
-        margin-bottom: 1.5rem;
-        background: linear-gradient(135deg, #1e0744 0%, #5521b5 42%, #7c3aed 100%);
+        padding: 2rem;
+        background:
+            radial-gradient(circle at top right, rgba(255, 255, 255, 0.18), transparent 32%),
+            linear-gradient(135deg, #071a33 0%, #0f4c81 42%, #1d74c9 100%);
         color: #fff;
-        box-shadow: 0 28px 60px rgba(108, 43, 217, 0.22);
+        box-shadow: 0 28px 68px rgba(15, 76, 129, 0.28);
     }
 
-    .customer-hero::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: radial-gradient(circle at top right, rgba(255,255,255,0.18), transparent 35%);
-        pointer-events: none;
+    .customer-hero-copy {
+        max-width: 44rem;
     }
 
-    .customer-hero > * {
-        position: relative;
-        z-index: 1;
+    .customer-kicker {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        margin-bottom: 1rem;
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        border-radius: 999px;
+        padding: 0.45rem 0.9rem;
+        background: rgba(255, 255, 255, 0.12);
+        font-size: 0.76rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
     }
 
     .customer-hero h1 {
         margin: 0;
-        font-size: clamp(1.85rem, 2.5vw, 2.4rem);
-        font-weight: 900;
+        font-size: clamp(2rem, 4vw, 3.2rem);
+        line-height: 1.02;
         letter-spacing: -0.05em;
+        font-weight: 900;
     }
 
     .customer-hero p {
-        margin: 0.75rem 0 0;
-        max-width: 58ch;
-        color: rgba(255,255,255,0.78);
+        margin: 1rem 0 0;
+        max-width: 38rem;
+        color: rgba(255, 255, 255, 0.82);
         line-height: 1.7;
+        font-size: 0.98rem;
     }
 
-    .shop-grid {
+    .customer-hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-top: 1.4rem;
+    }
+
+    .customer-hero-actions a,
+    .customer-hero-actions button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        border-radius: 16px;
+        padding: 0.9rem 1.1rem;
+        font-weight: 700;
+        text-decoration: none;
+        border: 1px solid transparent;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+
+    .customer-btn-primary {
+        background: #fff;
+        color: #0f4c81;
+        box-shadow: 0 18px 36px rgba(7, 26, 51, 0.18);
+    }
+
+    .customer-btn-secondary {
+        background: rgba(255, 255, 255, 0.12);
+        color: #fff;
+        border-color: rgba(255, 255, 255, 0.24);
+    }
+
+    .customer-hero-actions a:hover,
+    .customer-hero-actions button:hover {
+        transform: translateY(-2px);
+    }
+
+    .customer-hero-metrics {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(245px, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.9rem;
+        margin-top: 1.6rem;
+    }
+
+    .customer-metric {
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 20px;
+        padding: 1rem 1.1rem;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+    }
+
+    .customer-metric-label {
+        display: block;
+        color: rgba(255, 255, 255, 0.72);
+        font-size: 0.74rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .customer-metric-value {
+        display: block;
+        margin-top: 0.45rem;
+        font-size: 1.45rem;
+        font-weight: 900;
+        letter-spacing: -0.04em;
+    }
+
+    .customer-toolbar {
+        display: grid;
+        gap: 1rem;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        border-radius: 24px;
+        padding: 1.2rem;
+        background: rgba(255, 255, 255, 0.92);
+        box-shadow: 0 16px 34px rgba(15, 23, 42, 0.07);
+    }
+
+    .customer-toolbar-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .customer-toolbar-copy h2 {
+        margin: 0;
+        font-size: 1.05rem;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        color: #0f172a;
+    }
+
+    .customer-toolbar-copy p {
+        margin: 0.35rem 0 0;
+        color: #64748b;
+        font-size: 0.94rem;
+    }
+
+    .customer-quick-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.65rem;
+    }
+
+    .customer-quick-links a {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        border-radius: 999px;
+        padding: 0.62rem 0.95rem;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        background: #fff;
+        color: #334155;
+        font-size: 0.88rem;
+        font-weight: 700;
+        text-decoration: none;
+        transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+    }
+
+    .customer-quick-links a:hover {
+        border-color: rgba(15, 76, 129, 0.3);
+        color: #0f4c81;
+        background: #eff6ff;
+    }
+
+    .customer-toolbar-form {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 0.9rem;
+        align-items: end;
+    }
+
+    .customer-field label {
+        display: block;
+        margin-bottom: 0.45rem;
+        color: #334155;
+        font-size: 0.88rem;
+        font-weight: 700;
+    }
+
+    .customer-search {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        border: 1px solid rgba(15, 23, 42, 0.1);
+        border-radius: 18px;
+        padding: 0.15rem 0.2rem 0.15rem 0.95rem;
+        background: #fff;
+    }
+
+    .customer-search i {
+        color: #64748b;
+        font-size: 0.95rem;
+    }
+
+    .customer-search input {
+        flex: 1;
+        border: 0;
+        outline: 0;
+        padding: 0.82rem 0;
+        min-width: 0;
+        font-size: 0.96rem;
+        background: transparent;
+    }
+
+    .customer-toolbar-actions {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .customer-toolbar-actions button,
+    .customer-toolbar-actions a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        border-radius: 16px;
+        padding: 0.88rem 1.15rem;
+        font-weight: 700;
+        text-decoration: none;
+        border: 1px solid transparent;
+    }
+
+    .customer-toolbar-actions button {
+        background: #0f4c81;
+        color: #fff;
+    }
+
+    .customer-toolbar-actions a {
+        background: #eff6ff;
+        border-color: rgba(15, 76, 129, 0.12);
+        color: #0f4c81;
+    }
+
+    .customer-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(235px, 1fr));
         gap: 1rem;
     }
 
-    .shop-card {
-        height: 100%;
-        background: rgba(255,255,255,0.96);
-        border: 1px solid rgba(15,23,42,0.08);
-        border-radius: 24px;
-        overflow: hidden;
-        box-shadow: 0 18px 40px rgba(15,23,42,0.08);
-        transition: transform 0.22s ease, box-shadow 0.22s ease;
-    }
-
-    .shop-card:hover {
-        transform: translateY(-6px);
-        box-shadow: 0 24px 52px rgba(108,43,217,0.16);
-    }
-
-    .shop-card-media {
-        aspect-ratio: 1 / 1;
-        background: linear-gradient(180deg, #f8f7ff 0%, #f1f5f9 100%);
+    .customer-card {
         display: flex;
-        align-items: center;
-        justify-content: center;
+        flex-direction: column;
+        height: 100%;
+        overflow: hidden;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+        transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+    }
+
+    .customer-card:hover {
+        transform: translateY(-4px);
+        border-color: rgba(15, 76, 129, 0.18);
+        box-shadow: 0 24px 50px rgba(15, 76, 129, 0.14);
+    }
+
+    .customer-card-media {
+        position: relative;
+        aspect-ratio: 1 / 1;
+        background: linear-gradient(180deg, #eff6ff 0%, #f8fafc 100%);
         overflow: hidden;
     }
 
-    .shop-card-media img {
+    .customer-card-media img {
         width: 100%;
         height: 100%;
         object-fit: cover;
     }
 
-    .shop-card-placeholder {
+    .customer-card-placeholder {
         display: flex;
         flex-direction: column;
         align-items: center;
+        justify-content: center;
+        height: 100%;
         gap: 0.5rem;
         color: #94a3b8;
     }
 
-    .shop-card-placeholder i {
+    .customer-card-placeholder i {
         font-size: 2rem;
     }
 
-    .shop-card-body {
-        padding: 1rem 1rem 1.1rem;
+    .customer-stock-chip {
+        position: absolute;
+        top: 0.9rem;
+        right: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.48rem 0.7rem;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 800;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
     }
 
-    .shop-card-brand {
-        color: #6c2bd9;
-        font-size: 0.78rem;
+    .customer-stock-chip.ok {
+        background: rgba(240, 253, 244, 0.96);
+        color: #166534;
+    }
+
+    .customer-stock-chip.low {
+        background: rgba(254, 242, 242, 0.96);
+        color: #b91c1c;
+    }
+
+    .customer-card-body {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        padding: 1rem;
+    }
+
+    .customer-card-brand {
+        color: #0f4c81;
+        font-size: 0.76rem;
         font-weight: 800;
         letter-spacing: 0.08em;
         text-transform: uppercase;
     }
 
-    .shop-card-name {
+    .customer-card-name {
+        margin-top: 0.35rem;
         color: #0f172a;
         font-size: 1rem;
         font-weight: 800;
-        margin-top: 0.35rem;
         line-height: 1.45;
-        min-height: 2.8em;
+        min-height: 2.9em;
     }
 
-    .shop-card-meta {
+    .customer-card-meta {
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 0.75rem;
-        margin: 0.85rem 0 1rem;
+        margin: 0.9rem 0 1rem;
     }
 
-    .shop-card-price {
+    .customer-card-price {
         color: #0f172a;
-        font-size: 1.18rem;
+        font-size: 1.15rem;
         font-weight: 900;
         letter-spacing: -0.03em;
     }
 
-    .stock-chip {
+    .customer-card-copy {
+        color: #64748b;
+        font-size: 0.9rem;
+        line-height: 1.6;
+        margin-bottom: 1rem;
+    }
+
+    .customer-card-actions {
+        display: grid;
+        gap: 0.65rem;
+        margin-top: auto;
+    }
+
+    .customer-card-actions a,
+    .customer-card-actions button {
         display: inline-flex;
         align-items: center;
-        gap: 0.35rem;
-        border-radius: 999px;
-        padding: 0.42rem 0.7rem;
-        font-size: 0.76rem;
-        font-weight: 800;
+        justify-content: center;
+        gap: 0.5rem;
+        width: 100%;
+        border-radius: 16px;
+        padding: 0.88rem 1rem;
+        font-weight: 700;
+        text-decoration: none;
+        border: 1px solid transparent;
     }
 
-    .stock-chip.ok {
-        background: rgba(22,163,74,0.08);
-        color: #15803d;
+    .customer-card-actions a {
+        background: #eff6ff;
+        color: #0f4c81;
     }
 
-    .stock-chip.low {
-        background: rgba(220,38,38,0.08);
-        color: #b91c1c;
+    .customer-card-actions button {
+        background: #0f4c81;
+        color: #fff;
+    }
+
+    .customer-empty {
+        text-align: center;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        border-radius: 28px;
+        padding: 3rem 1.5rem;
+        background: rgba(255, 255, 255, 0.95);
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+    }
+
+    .customer-empty-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 72px;
+        height: 72px;
+        border-radius: 24px;
+        margin-bottom: 1rem;
+        background: #eff6ff;
+        color: #0f4c81;
+        font-size: 1.7rem;
+    }
+
+    .customer-empty h3 {
+        margin: 0;
+        color: #0f172a;
+        font-size: 1.35rem;
+        font-weight: 900;
+    }
+
+    .customer-empty p {
+        max-width: 34rem;
+        margin: 0.8rem auto 0;
+        color: #64748b;
+        line-height: 1.7;
+    }
+
+    .customer-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-top: 1rem;
+        border-top: 1px solid rgba(15, 23, 42, 0.08);
+        padding-top: 1rem;
+    }
+
+    .customer-pagination-copy {
+        color: #64748b;
+        font-size: 0.92rem;
+    }
+
+    .customer-pagination-links {
+        display: flex;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+    }
+
+    .customer-pagination-links a,
+    .customer-pagination-links span {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 42px;
+        height: 42px;
+        padding: 0 1rem;
+        border-radius: 14px;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        background: #fff;
+        color: #334155;
+        font-weight: 700;
+        text-decoration: none;
+    }
+
+    .customer-pagination-links .active {
+        background: #0f4c81;
+        border-color: #0f4c81;
+        color: #fff;
+    }
+
+    .customer-pagination-links .disabled {
+        opacity: 0.48;
+        pointer-events: none;
+    }
+
+    @@media (max-width: 991px) {
+        .customer-toolbar-form {
+            grid-template-columns: 1fr;
+        }
+
+        .customer-toolbar-actions {
+            width: 100%;
+        }
+
+        .customer-toolbar-actions button,
+        .customer-toolbar-actions a {
+            flex: 1 1 180px;
+        }
+    }
+
+    @@media (max-width: 767px) {
+        .customer-hero {
+            padding: 1.5rem;
+        }
+
+        .customer-hero-metrics {
+            grid-template-columns: 1fr;
+        }
+
+        .customer-toolbar-top {
+            align-items: stretch;
+        }
+    }
+
+    @@media (max-width: 575px) {
+        .customer-shell {
+            gap: 1rem;
+        }
+
+        .customer-hero-actions,
+        .customer-toolbar-actions,
+        .customer-quick-links {
+            display: grid;
+            grid-template-columns: 1fr;
+        }
+
+        .customer-hero-actions a,
+        .customer-toolbar-actions a,
+        .customer-toolbar-actions button,
+        .customer-quick-links a {
+            width: 100%;
+        }
+
+        .customer-card-meta,
+        .customer-pagination {
+            flex-direction: column;
+            align-items: flex-start;
+        }
     }
 </style>
 
-<section class="customer-hero">
-    <div class="page-heading mb-0">
-        <div>
-            <h1>Shop the customer collection</h1>
-            <p>Explore the same curated T-Socket catalog with a cleaner browsing flow, faster cart actions, and a more polished product grid.</p>
+<div class="customer-shell">
+    <section class="customer-hero">
+        <div class="customer-hero-copy">
+            <span class="customer-kicker">
+                <i class="bi bi-stars"></i>
+                Signed-in customer shop
+            </span>
+            <h1>Shop faster with your customer dashboard already connected.</h1>
+            <p>Browse the full T-Socket collection, jump into your cart in one tap, and move between product discovery, orders, and profile without the layout fighting mobile screens.</p>
         </div>
-        <div class="page-action-row">
-            <a asp-action="Index" asp-controller="Cart" class="btn btn-light">
-                <i class="bi bi-bag me-2"></i>Open cart
+
+        <div class="customer-hero-actions">
+            <a class="customer-btn-primary" asp-controller="Cart" asp-action="Index">
+                <i class="bi bi-bag"></i>
+                Open cart
+            </a>
+            <a class="customer-btn-secondary" asp-controller="Order" asp-action="GetOrdersByCustomerId">
+                <i class="bi bi-receipt"></i>
+                Track orders
             </a>
         </div>
-    </div>
-</section>
 
-<div class="ts-filter-card mb-4">
-    <form asp-action="Index" method="get" asp-controller="Customer">
-        <div class="row g-3 align-items-end">
-            <div class="col-lg-8">
-                <label class="form-label" for="searchString">Search items</label>
-                <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-search"></i></span>
-                    <input id="searchString"
-                           type="search"
-                           class="form-control"
-                           name="searchString"
-                           placeholder="Search by product or brand"
-                           value="@search"
-                           aria-label="Search items" />
-                </div>
+        <div class="customer-hero-metrics">
+            <div class="customer-metric">
+                <span class="customer-metric-label">Visible items</span>
+                <span class="customer-metric-value">@totalItems</span>
             </div>
-            <div class="col-lg-4">
-                <div class="page-action-row">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-sliders me-2"></i>Apply filters
-                    </button>
-                    <a asp-action="Index" asp-controller="Customer" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-counterclockwise me-2"></i>Reset
-                    </a>
-                </div>
+            <div class="customer-metric">
+                <span class="customer-metric-label">Catalog state</span>
+                <span class="customer-metric-value">Live</span>
+            </div>
+            <div class="customer-metric">
+                <span class="customer-metric-label">Checkout flow</span>
+                <span class="customer-metric-value">Ready</span>
             </div>
         </div>
-    </form>
-</div>
+    </section>
 
-@if (items.Count == 0)
-{
-    <div class="empty-state-card">
-        <div class="empty-state-icon"><i class="bi bi-inbox"></i></div>
-        <h3 class="page-title" style="font-size:1.4rem;">No items matched this search</h3>
-        <p class="page-subtitle">
-            @(string.IsNullOrWhiteSpace(search)
-                ? "There are no customer-facing products available right now."
-                : $"Nothing matched \"{search}\" yet. Try a broader search term.")
-        </p>
-        <a asp-action="Index" asp-controller="Customer" class="btn btn-primary mt-3">
-            <i class="bi bi-arrow-repeat me-2"></i>Browse all items
-        </a>
-    </div>
-}
-else
-{
-    <div class="shop-grid">
-        @foreach (var item in items)
-        {
-            var stockOk = item.QuantityInStock > 5;
+    <section class="customer-toolbar">
+        <div class="customer-toolbar-top">
+            <div class="customer-toolbar-copy">
+                <h2>Customer catalog</h2>
+                <p>Search by product name, brand, or a general category and keep browsing on smaller screens without layout overflow.</p>
+            </div>
 
-            <article class="shop-card">
-                <div class="shop-card-media">
-                    @if (!string.IsNullOrWhiteSpace(item.ImagePath))
-                    {
-                        <img src="@item.ImagePath" alt="@item.Name" />
-                    }
-                    else
-                    {
-                        <div class="shop-card-placeholder">
-                            <i class="bi bi-image"></i>
-                            <span>No image</span>
-                        </div>
-                    }
+            <div class="customer-quick-links">
+                <a asp-controller="Home" asp-action="Store">
+                    <i class="bi bi-shop"></i>
+                    Public store
+                </a>
+                <a asp-controller="Customer" asp-action="CustomerProfile">
+                    <i class="bi bi-person-circle"></i>
+                    Profile
+                </a>
+                <a asp-controller="Order" asp-action="GetOrdersByCustomerId">
+                    <i class="bi bi-clock-history"></i>
+                    Orders
+                </a>
+            </div>
+        </div>
+
+        <form asp-controller="Customer" asp-action="Index" method="get" class="customer-toolbar-form">
+            <div class="customer-field">
+                <label for="customer-query">Search the catalog</label>
+                <div class="customer-search">
+                    <i class="bi bi-search"></i>
+                    <input id="customer-query"
+                           type="search"
+                           name="q"
+                           value="@query"
+                           placeholder="Try laptop, earbuds, charger, or a brand name"
+                           aria-label="Search the customer catalog" />
                 </div>
-                <div class="shop-card-body">
-                    <div class="shop-card-brand">@item.Brand</div>
-                    <div class="shop-card-name">@item.Name</div>
-                    <div class="shop-card-meta">
-                        <div class="shop-card-price">₦@item.Price.ToString("N2")</div>
-                        <span class="stock-chip @(stockOk ? "ok" : "low")">
+            </div>
+
+            <div class="customer-toolbar-actions">
+                <button type="submit">
+                    <i class="bi bi-sliders"></i>
+                    Apply
+                </button>
+                <a asp-controller="Customer" asp-action="Index">
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                    Reset
+                </a>
+            </div>
+        </form>
+    </section>
+
+    @if (items.Count == 0)
+    {
+        <section class="customer-empty" role="status">
+            <div class="customer-empty-icon">
+                <i class="bi bi-inbox"></i>
+            </div>
+            <h3>No items matched this search</h3>
+            <p>
+                @(string.IsNullOrWhiteSpace(query)
+                    ? "There are no customer-facing products available right now."
+                    : $"Nothing matched \"{query}\" yet. Try a broader term and the catalog will update here.")
+            </p>
+            <div class="customer-hero-actions" style="justify-content:center; margin-top:1.35rem;">
+                <a class="customer-btn-primary" asp-controller="Customer" asp-action="Index">
+                    <i class="bi bi-arrow-repeat"></i>
+                    Browse all items
+                </a>
+            </div>
+        </section>
+    }
+    else
+    {
+        <section class="customer-grid">
+            @foreach (var item in items)
+            {
+                var detailUrl = Url.Action("Details", "Home", new { id = item.Id }) ?? "#";
+                var stockOk = item.QuantityInStock > 5;
+
+                <article class="customer-card">
+                    <div class="customer-card-media">
+                        @if (!string.IsNullOrWhiteSpace(item.ImagePath))
+                        {
+                            <img src="@item.ImagePath" alt="@item.Name" loading="lazy" />
+                        }
+                        else
+                        {
+                            <div class="customer-card-placeholder">
+                                <i class="bi bi-image"></i>
+                                <span>No image</span>
+                            </div>
+                        }
+
+                        <span class="customer-stock-chip @(stockOk ? "ok" : "low")">
                             <i class="bi @(stockOk ? "bi-check-circle" : "bi-exclamation-circle")"></i>
                             @(stockOk ? "In stock" : "Low stock")
                         </span>
                     </div>
-                    <form asp-action="AddToCart" asp-controller="Cart" method="post">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="itemId" value="@item.Id" />
-                        <input type="hidden" name="quantity" value="1" />
-                        <input type="hidden" name="returnUrl" value="@returnUrl" />
-                        <button type="submit" class="btn btn-primary w-100">
-                            <i class="bi bi-bag-plus me-2"></i>Add to cart
-                        </button>
-                    </form>
-                </div>
-            </article>
-        }
-    </div>
-}
 
-@if (Model?.Pagination != null && Model.Pagination.TotalPages > 1)
-{
-    <nav aria-label="Item pagination" class="mt-4">
-        <ul class="pagination justify-content-center">
-            <li class="page-item @(Model.Pagination.HasPreviousPage ? "" : "disabled")">
-                <a class="page-link"
-                   asp-action="Index"
+                    <div class="customer-card-body">
+                        <div class="customer-card-brand">@item.Brand</div>
+                        <div class="customer-card-name">@item.Name</div>
+                        <div class="customer-card-meta">
+                            <div class="customer-card-price">&#8358;@item.Price.ToString("N2")</div>
+                            <span class="text-muted small">@item.QuantityInStock unit(s)</span>
+                        </div>
+                        <div class="customer-card-copy">A faster customer-ready product tile with cleaner spacing, better tap targets, and direct access to details or cart.</div>
+
+                        <div class="customer-card-actions">
+                            <a href="@detailUrl">
+                                <i class="bi bi-eye"></i>
+                                View details
+                            </a>
+                            <form asp-controller="Cart" asp-action="AddToCart" method="post" class="m-0">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="itemId" value="@item.Id" />
+                                <input type="hidden" name="quantity" value="1" />
+                                <input type="hidden" name="returnUrl" value="@returnUrl" />
+                                <button type="submit">
+                                    <i class="bi bi-bag-plus"></i>
+                                    Add to cart
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </article>
+            }
+        </section>
+    }
+
+    @if (pagination != null && totalPages > 1)
+    {
+        var startPage = Math.Max(1, currentPage - 2);
+        var endPage = Math.Min(totalPages, currentPage + 2);
+
+        <nav class="customer-pagination" aria-label="Customer catalog pagination">
+            <div class="customer-pagination-copy">Page @currentPage of @totalPages</div>
+
+            <div class="customer-pagination-links">
+                <a class="@(pagination.HasPreviousPage ? string.Empty : "disabled")"
                    asp-controller="Customer"
-                   asp-route-searchString="@search"
-                   asp-route-pageNumber="@(Model.Pagination.PageNumber - 1)"
-                   asp-route-pageSize="@Model.Pagination.PageSize">Previous</a>
-            </li>
-            <li class="page-item disabled">
-                <span class="page-link">Page @Model.Pagination.PageNumber</span>
-            </li>
-            <li class="page-item @(Model.Pagination.HasNextPage ? "" : "disabled")">
-                <a class="page-link"
                    asp-action="Index"
+                   asp-route-q="@query"
+                   asp-route-pageNumber="@(currentPage - 1)"
+                   asp-route-pageSize="@pagination.PageSize">
+                    Previous
+                </a>
+
+                @for (var pageIndex = startPage; pageIndex <= endPage; pageIndex++)
+                {
+                    <a class="@(pageIndex == currentPage ? "active" : string.Empty)"
+                       asp-controller="Customer"
+                       asp-action="Index"
+                       asp-route-q="@query"
+                       asp-route-pageNumber="@pageIndex"
+                       asp-route-pageSize="@pagination.PageSize">
+                        @pageIndex
+                    </a>
+                }
+
+                <a class="@(pagination.HasNextPage ? string.Empty : "disabled")"
                    asp-controller="Customer"
-                   asp-route-searchString="@search"
-                   asp-route-pageNumber="@(Model.Pagination.PageNumber + 1)"
-                   asp-route-pageSize="@Model.Pagination.PageSize">Next</a>
-            </li>
-        </ul>
-    </nav>
-}
+                   asp-action="Index"
+                   asp-route-q="@query"
+                   asp-route-pageNumber="@(currentPage + 1)"
+                   asp-route-pageSize="@pagination.PageSize">
+                    Next
+                </a>
+            </div>
+        </nav>
+    }
+</div>
