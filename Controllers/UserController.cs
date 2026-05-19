@@ -142,7 +142,21 @@ namespace EMS.Controllers
                 return View(model);
             }
         }
+        [HttpGet]
         public async Task<IActionResult> Logout()
+        {
+            return await LogoutCore();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [ActionName("Logout")]
+        public async Task<IActionResult> LogoutConfirmed()
+        {
+            return await LogoutCore();
+        }
+
+        private async Task<IActionResult> LogoutCore()
         {
             await HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
             HttpContext.Session.Clear();

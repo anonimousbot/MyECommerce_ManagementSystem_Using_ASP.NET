@@ -130,7 +130,7 @@ namespace EMS.Controllers
         {
             var updateOrder = await _orderService.UpdateAsync(id, model);
             if (updateOrder == null) return BadRequest();
-            return RedirectToAction("Index", "Item");
+            return RedirectToAction("Index", "Order");
         }
 
         [HttpGet]
